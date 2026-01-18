@@ -247,15 +247,32 @@ sudo chmod -R 777 /ssd/www/bots/botsalebestwebstudio/logs 2>/dev/null || true
 
 ## 🔄 Автоматический деплой
 
-### Вариант 1: GitHub Actions
+### ⭐ Вариант 1: GitHub Actions (РЕКОМЕНДУЮ)
 
-1. Добавьте secrets в GitHub:
+> **📘 Подробная инструкция:** [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)
+
+**Как это работает:**
+```
+GitHub (push / merge) → GitHub Actions → VPS (SSH) → git pull + deploy.sh
+```
+
+**Плюсы:**
+- ✅ Безопасно
+- ✅ Логируется
+- ✅ Можно откатить
+- ✅ Стандарт индустрии
+- ✅ **Ты вообще не заходишь на VPS руками**
+
+**Что нужно:**
+1. Добавьте secrets в GitHub (Settings → Secrets and variables → Actions):
    - `VPS_HOST` - IP или домен вашего VPS
-   - `VPS_USER` - пользователь для SSH
+   - `VPS_USER` - пользователь для SSH (обычно `root`)
    - `VPS_SSH_KEY` - приватный SSH ключ
-   - `VPS_PATH` - путь к проекту на VPS: `/ssd/www/bots/botsalebestwebstudio`
+   - `VPS_PATH` - `/ssd/www/bots/botsalebestwebstudio`
 
 2. При каждом push в `main` или `master` будет автоматически выполняться деплой.
+
+**📖 Полная инструкция:** [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)
 
 ### Вариант 2: Git Webhook
 
@@ -390,6 +407,7 @@ VALUES ('Лендинг', 'Одностраничный сайт', 15000, 50000,
  ├── DEPLOY_GUIDE.md      # Полный гайд по деплою
  ├── APACHE_SETUP.md      # Настройка Apache
  ├── APPLY_ON_SERVER.md   # Применение на сервере
+ ├── GITHUB_ACTIONS_SETUP.md  # Настройка GitHub Actions
  └── README.md             # Документация
 ```
 
