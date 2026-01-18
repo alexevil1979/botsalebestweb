@@ -17,8 +17,15 @@ class Database
             $user = Config::get('DB_USER');
             $pass = Config::get('DB_PASS', '');
             $charset = Config::get('DB_CHARSET', 'utf8mb4');
+            $socket = Config::get('DB_SOCKET', '');
 
-            $dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
+            // Если указан сокет, используем его вместо host
+            if (!empty($socket)) {
+                $dsn = "mysql:unix_socket={$socket};dbname={$dbname};charset={$charset}";
+            } else {
+                $dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
+            }
+
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
