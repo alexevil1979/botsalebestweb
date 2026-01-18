@@ -8,7 +8,8 @@ Production-ready Telegram-бот, который работает как про�
 🚀 **Полный гайд по деплою:** см. [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)  
 📋 **Детальный деплой:** см. [DEPLOY.md](DEPLOY.md)  
 🔧 **Применить на сервере:** см. [APPLY_ON_SERVER.md](APPLY_ON_SERVER.md)  
-🌐 **Настройка Apache:** см. [APACHE_SETUP.md](APACHE_SETUP.md)
+🌐 **Настройка Apache:** см. [APACHE_SETUP.md](APACHE_SETUP.md)  
+⚡ **GitHub Actions (автодеплой):** см. [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) ⭐ РЕКОМЕНДУЮ
 
 ## 🎯 Возможности
 
