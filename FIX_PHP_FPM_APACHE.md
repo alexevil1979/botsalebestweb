@@ -65,19 +65,19 @@ sudo nano /etc/apache2/sites-available/botsalebestwebstudio.conf
     </Directory>
 
     # PHP-FPM обработка - ВАЖНО!
-    # Вариант 1: Если сокет в /var/run/php/
+    # Вариант 1: Если используется TCP (127.0.0.1:9000) - РЕКОМЕНДУЕТСЯ
     <FilesMatch \.php$>
-        SetHandler "proxy:unix:/var/run/php/php8.1-fpm.sock|fcgi://localhost"
+        SetHandler "proxy:fcgi://127.0.0.1:9000"
     </FilesMatch>
 
-    # Вариант 2: Если сокет в /usr/local/php8.1/var/run/
+    # Вариант 2: Если сокет в /var/run/php/
     # <FilesMatch \.php$>
-    #     SetHandler "proxy:unix:/usr/local/php8.1/var/run/php-fpm.sock|fcgi://localhost"
+    #     SetHandler "proxy:unix:/var/run/php/php8.1-fpm.sock|fcgi://localhost"
     # </FilesMatch>
 
-    # Вариант 3: Если используется TCP (127.0.0.1:9000)
+    # Вариант 3: Если сокет в /usr/local/php8.1/var/run/
     # <FilesMatch \.php$>
-    #     SetHandler "proxy:fcgi://127.0.0.1:9000"
+    #     SetHandler "proxy:unix:/usr/local/php8.1/var/run/php-fpm.sock|fcgi://localhost"
     # </FilesMatch>
 
     <Directory /ssd/www/bots/botsalebestwebstudio/admin>
