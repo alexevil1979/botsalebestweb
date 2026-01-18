@@ -34,8 +34,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && Auth::verifyCSRF($_POST['csrf_token
         header('Location: /admin/services.php');
         exit;
     } elseif ($action === 'delete' && $serviceId) {
-        if (Auth::verifyCSRF($_GET['csrf_token'] ?? '')) {
-            Service::delete($serviceId);
+        Service::delete($serviceId);
+        header('Location: /admin/services.php');
+        exit;
+    } elseif ($action === 'delete_multiple') {
+        $ids = $_POST['ids'] ?? [];
+        if (!empty($ids) && is_array($ids)) {
+            foreach ($ids as $id) {
+                $id = (int)$id;
+                if ($id > 0) {
+                    Service::delete($id);
+                }
+            }
         }
         header('Location: /admin/services.php');
         exit;
@@ -59,63 +69,119 @@ include __DIR__ . '/includes/header.php';
     <h1>⚙️ Услуги</h1>
 
     <?php if ($action === 'list'): ?>
-        <div style="margin-bottom: 1.5rem;">
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
             <a href="/admin/services.php?action=create" class="btn">+ Добавить услугу</a>
+            <form id="deleteMultipleForm" method="POST" style="display: none; margin: 0;">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                <input type="hidden" name="action" value="delete_multiple">
+                <input type="hidden" name="ids" id="selectedIds" value="">
+                <button type="submit" class="btn btn-danger" id="deleteMultipleBtn" onclick="return confirm('Удалить выбранные услуги?')">Удалить выбранные</button>
+            </form>
         </div>
 
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Название</th>
-                    <th>Описание</th>
-                    <th>Цена</th>
-                    <th>Активна</th>
-                    <th>Порядок</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($services as $service): ?>
+        <form id="servicesForm" method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+            <table class="data-table">
+                <thead>
                     <tr>
-                        <td><?php echo $service['id']; ?></td>
-                        <td><strong><?php echo htmlspecialchars($service['name']); ?></strong></td>
-                        <td><?php echo htmlspecialchars(mb_substr($service['description'] ?? '', 0, 100)); ?><?php echo mb_strlen($service['description'] ?? '') > 100 ? '...' : ''; ?></td>
-                        <td>
-                            <?php if ($service['price_from'] || $service['price_to']): ?>
-                                <?php if ($service['price_from']): ?>
-                                    от <?php echo number_format($service['price_from'], 0, ',', ' '); ?> ₽
-                                <?php endif; ?>
-                                <?php if ($service['price_to']): ?>
-                                    до <?php echo number_format($service['price_to'], 0, ',', ' '); ?> ₽
-                                <?php endif; ?>
-                            <?php else: ?>
-                                Не указана
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php if ($service['active']): ?>
-                                <span class="status-badge status-active">Да</span>
-                            <?php else: ?>
-                                <span class="status-badge status-lost">Нет</span>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo $service['sort_order']; ?></td>
-                        <td>
-                            <a href="/admin/services.php?action=edit&id=<?php echo $service['id']; ?>" class="btn-small">Редактировать</a>
-                            <a href="/admin/services.php?action=delete&id=<?php echo $service['id']; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>" 
-                               class="btn-small btn-danger" 
-                               onclick="return confirm('Удалить услугу?')">Удалить</a>
-                        </td>
+                        <th style="width: 40px;">
+                            <input type="checkbox" id="selectAll" title="Выбрать все">
+                        </th>
+                        <th>ID</th>
+                        <th>Название</th>
+                        <th>Описание</th>
+                        <th>Цена</th>
+                        <th>Активна</th>
+                        <th>Порядок</th>
+                        <th>Действия</th>
                     </tr>
-                <?php endforeach; ?>
-                <?php if (empty($services)): ?>
-                    <tr>
-                        <td colspan="7" style="text-align: center; padding: 2rem;">Нет услуг</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ($services as $service): ?>
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="service_ids[]" value="<?php echo $service['id']; ?>" class="service-checkbox">
+                            </td>
+                            <td><?php echo $service['id']; ?></td>
+                            <td><strong><?php echo htmlspecialchars($service['name']); ?></strong></td>
+                            <td><?php echo htmlspecialchars(mb_substr($service['description'] ?? '', 0, 100)); ?><?php echo mb_strlen($service['description'] ?? '') > 100 ? '...' : ''; ?></td>
+                            <td>
+                                <?php if ($service['price_from'] || $service['price_to']): ?>
+                                    <?php if ($service['price_from']): ?>
+                                        от <?php echo number_format($service['price_from'], 0, ',', ' '); ?> ₽
+                                    <?php endif; ?>
+                                    <?php if ($service['price_to']): ?>
+                                        до <?php echo number_format($service['price_to'], 0, ',', ' '); ?> ₽
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    Не указана
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($service['active']): ?>
+                                    <span class="status-badge status-active">Да</span>
+                                <?php else: ?>
+                                    <span class="status-badge status-lost">Нет</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo $service['sort_order']; ?></td>
+                            <td>
+                                <a href="/admin/services.php?action=edit&id=<?php echo $service['id']; ?>" class="btn-small">Редактировать</a>
+                                <form method="POST" style="display: inline;" onsubmit="return confirm('Удалить услугу?');">
+                                    <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="id" value="<?php echo $service['id']; ?>">
+                                    <button type="submit" class="btn-small btn-danger">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (empty($services)): ?>
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 2rem;">Нет услуг</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </form>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.service-checkbox');
+            const deleteMultipleForm = document.getElementById('deleteMultipleForm');
+            const deleteMultipleBtn = document.getElementById('deleteMultipleBtn');
+            const selectedIdsInput = document.getElementById('selectedIds');
+
+            // Выбрать все / снять выбор
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                updateDeleteButton();
+            });
+
+            // Обновление кнопки удаления при изменении чекбоксов
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateDeleteButton);
+            });
+
+            function updateDeleteButton() {
+                const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+                if (selected.length > 0) {
+                    deleteMultipleForm.style.display = 'inline-block';
+                    selectedIdsInput.value = JSON.stringify(selected);
+                } else {
+                    deleteMultipleForm.style.display = 'none';
+                }
+            }
+
+            // Обновление "Выбрать все" при изменении отдельных чекбоксов
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    selectAll.checked = Array.from(checkboxes).every(cb => cb.checked);
+                });
+            });
+        });
+        </script>
 
     <?php elseif ($action === 'create' || $action === 'edit'): ?>
         <h2><?php echo $action === 'create' ? 'Добавить услугу' : 'Редактировать услугу'; ?></h2>
