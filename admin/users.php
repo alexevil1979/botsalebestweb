@@ -50,14 +50,14 @@ include __DIR__ . '/includes/header.php';
         <tbody>
             <?php foreach ($users as $user): ?>
                 <tr>
-                    <td><?= $user['id'] ?></td>
-                    <td><?= $user['telegram_id'] ?></td>
-                    <td><?= htmlspecialchars($user['first_name'] ?? 'N/A') ?></td>
-                    <td>@<?= htmlspecialchars($user['username'] ?? 'N/A') ?></td>
-                    <td><?= htmlspecialchars($user['language_code'] ?? 'N/A') ?></td>
-                    <td><?= $user['dialogs_count'] ?></td>
-                    <td><?= $user['leads_count'] ?></td>
-                    <td><?= date('d.m.Y H:i', strtotime($user['created_at'])) ?></td>
+                    <td><?php echo $user['id']; ?></td>
+                    <td><?php echo $user['telegram_id']; ?></td>
+                    <td><?php echo htmlspecialchars($user['first_name'] ?? 'N/A'); ?></td>
+                    <td>@<?php echo htmlspecialchars($user['username'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($user['language_code'] ?? 'N/A'); ?></td>
+                    <td><?php echo $user['dialogs_count']; ?></td>
+                    <td><?php echo $user['leads_count']; ?></td>
+                    <td><?php echo date('d.m.Y H:i', strtotime($user['created_at'])); ?></td>
                 </tr>
             <?php endforeach; ?>
             <?php if (empty($users)): ?>
@@ -72,9 +72,9 @@ include __DIR__ . '/includes/header.php';
         <div class="pagination">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <?php if ($i === $page): ?>
-                    <span class="current"><?= $i ?></span>
+                    <span class="current"><?php echo $i; ?></span>
                 <?php else: ?>
-                    <a href="?page=<?= $i ?>"><?= $i ?></a>
+                    <a href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
                 <?php endif; ?>
             <?php endfor; ?>
         </div>

@@ -49,9 +49,9 @@ include __DIR__ . '/includes/header.php';
         <form method="GET" style="display: inline-block;">
             <select name="status" onchange="this.form.submit()">
                 <option value="">Все статусы</option>
-                <option value="active" <?= $statusFilter === 'active' ? 'selected' : '' ?>>Активные</option>
-                <option value="completed" <?= $statusFilter === 'completed' ? 'selected' : '' ?>>Завершённые</option>
-                <option value="archived" <?= $statusFilter === 'archived' ? 'selected' : '' ?>>Архивные</option>
+                <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Активные</option>
+                <option value="completed" <?php echo $statusFilter === 'completed' ? 'selected' : ''; ?>>Завершённые</option>
+                <option value="archived" <?php echo $statusFilter === 'archived' ? 'selected' : ''; ?>>Архивные</option>
             </select>
         </form>
     </div>
@@ -71,23 +71,23 @@ include __DIR__ . '/includes/header.php';
         <tbody>
             <?php foreach ($dialogs as $dialog): ?>
                 <tr>
-                    <td>#<?= $dialog['id'] ?></td>
+                    <td>#<?php echo $dialog['id']; ?></td>
                     <td>
-                        <?= htmlspecialchars($dialog['first_name'] ?? $dialog['username'] ?? 'N/A') ?>
+                        <?php echo htmlspecialchars($dialog['first_name'] ?? $dialog['username'] ?? 'N/A'); ?>
                         <?php if ($dialog['telegram_id']): ?>
-                            <br><small>@<?= $dialog['telegram_id'] ?></small>
+                            <br><small>@<?php echo $dialog['telegram_id']; ?></small>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars($dialog['current_step'] ?? 'N/A') ?></td>
+                    <td><?php echo htmlspecialchars($dialog['current_step'] ?? 'N/A'); ?></td>
                     <td>
-                        <span class="status-badge status-<?= $dialog['status'] ?>">
-                            <?= htmlspecialchars($dialog['status']) ?>
+                        <span class="status-badge status-<?php echo $dialog['status']; ?>">
+                            <?php echo htmlspecialchars($dialog['status']); ?>
                         </span>
                     </td>
-                    <td><?= date('d.m.Y H:i', strtotime($dialog['created_at'])) ?></td>
-                    <td><?= date('d.m.Y H:i', strtotime($dialog['updated_at'])) ?></td>
+                    <td><?php echo date('d.m.Y H:i', strtotime($dialog['created_at'])); ?></td>
+                    <td><?php echo date('d.m.Y H:i', strtotime($dialog['updated_at'])); ?></td>
                     <td>
-                        <a href="/admin/chat.php?id=<?= $dialog['id'] ?>" class="btn-small">Просмотр</a>
+                        <a href="/admin/chat.php?id=<?php echo $dialog['id']; ?>" class="btn-small">Просмотр</a>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -103,9 +103,9 @@ include __DIR__ . '/includes/header.php';
         <div class="pagination">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <?php if ($i === $page): ?>
-                    <span class="current"><?= $i ?></span>
+                    <span class="current"><?php echo $i; ?></span>
                 <?php else: ?>
-                    <a href="?page=<?= $i ?><?= $statusFilter ? '&status=' . urlencode($statusFilter) : '' ?>"><?= $i ?></a>
+                    <a href="?page=<?php echo $i; ?><?php echo $statusFilter ? '&status=' . urlencode($statusFilter) : ''; ?>"><?php echo $i; ?></a>
                 <?php endif; ?>
             <?php endfor; ?>
         </div>

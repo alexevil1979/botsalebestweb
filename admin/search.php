@@ -37,7 +37,7 @@ include __DIR__ . '/includes/header.php';
         <form method="GET">
             <div class="form-group">
                 <label for="q">Поисковый запрос (минимум 3 символа)</label>
-                <input type="text" id="q" name="q" value="<?= htmlspecialchars($query) ?>" placeholder="Введите текст для поиска..." required>
+                <input type="text" id="q" name="q" value="<?php echo htmlspecialchars($query); ?>" placeholder="Введите текст для поиска..." required>
             </div>
             <button type="submit" class="btn">Искать</button>
         </form>
@@ -45,7 +45,7 @@ include __DIR__ . '/includes/header.php';
 
     <?php if ($query): ?>
         <div class="search-results">
-            <h2>Результаты поиска (<?= count($results) ?>)</h2>
+            <h2>Результаты поиска (<?php echo count($results); ?>)</h2>
             <?php if (empty($results)): ?>
                 <p style="text-align: center; padding: 2rem; color: #999;">Ничего не найдено</p>
             <?php else: ?>
@@ -53,20 +53,20 @@ include __DIR__ . '/includes/header.php';
                     <div class="search-result-item">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <div>
-                                <strong><?= htmlspecialchars($result['first_name'] ?? $result['username'] ?? 'N/A') ?></strong>
+                                <strong><?php echo htmlspecialchars($result['first_name'] ?? $result['username'] ?? 'N/A'); ?></strong>
                                 <span style="color: #999; margin-left: 1rem;">
-                                    <?= $result['direction'] === 'in' ? '← Входящее' : '→ Исходящее' ?>
+                                    <?php echo $result['direction'] === 'in' ? '← Входящее' : '→ Исходящее'; ?>
                                 </span>
                             </div>
                             <div style="color: #999;">
-                                <?= date('d.m.Y H:i:s', strtotime($result['created_at'])) ?>
+                                <?php echo date('d.m.Y H:i:s', strtotime($result['created_at'])); ?>
                             </div>
                         </div>
                         <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.5rem;">
-                            <?= nl2br(htmlspecialchars($result['text'])) ?>
+                            <?php echo nl2br(htmlspecialchars($result['text'])); ?>
                         </div>
                         <div>
-                            <a href="/admin/chat.php?id=<?= $result['dialog_id'] ?>" class="btn-small">Открыть диалог</a>
+                            <a href="/admin/chat.php?id=<?php echo $result['dialog_id']; ?>" class="btn-small">Открыть диалог</a>
                         </div>
                     </div>
                 <?php endforeach; ?>

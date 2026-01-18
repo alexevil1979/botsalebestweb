@@ -35,11 +35,11 @@ include __DIR__ . '/includes/header.php';
         <form method="GET" style="display: inline-block;">
             <select name="status" onchange="this.form.submit()">
                 <option value="">Все статусы</option>
-                <option value="new" <?= $statusFilter === 'new' ? 'selected' : '' ?>>Новые</option>
-                <option value="contacted" <?= $statusFilter === 'contacted' ? 'selected' : '' ?>>Связались</option>
-                <option value="qualified" <?= $statusFilter === 'qualified' ? 'selected' : '' ?>>Квалифицированы</option>
-                <option value="converted" <?= $statusFilter === 'converted' ? 'selected' : '' ?>>Конвертированы</option>
-                <option value="lost" <?= $statusFilter === 'lost' ? 'selected' : '' ?>>Потеряны</option>
+                <option value="new" <?php echo $statusFilter === 'new' ? 'selected' : ''; ?>>Новые</option>
+                <option value="contacted" <?php echo $statusFilter === 'contacted' ? 'selected' : ''; ?>>Связались</option>
+                <option value="qualified" <?php echo $statusFilter === 'qualified' ? 'selected' : ''; ?>>Квалифицированы</option>
+                <option value="converted" <?php echo $statusFilter === 'converted' ? 'selected' : ''; ?>>Конвертированы</option>
+                <option value="lost" <?php echo $statusFilter === 'lost' ? 'selected' : ''; ?>>Потеряны</option>
             </select>
         </form>
     </div>
@@ -60,42 +60,42 @@ include __DIR__ . '/includes/header.php';
         <tbody>
             <?php foreach ($leads as $lead): ?>
                 <tr>
-                    <td>#<?= $lead['id'] ?></td>
+                    <td>#<?php echo $lead['id']; ?></td>
                     <td>
-                        <?= htmlspecialchars($lead['first_name'] ?? $lead['username'] ?? 'N/A') ?>
+                        <?php echo htmlspecialchars($lead['first_name'] ?? $lead['username'] ?? 'N/A'); ?>
                         <?php if ($lead['telegram_id']): ?>
-                            <br><small>@<?= $lead['telegram_id'] ?></small>
+                            <br><small>@<?php echo $lead['telegram_id']; ?></small>
                         <?php endif; ?>
                     </td>
                     <td>
                         <?php if ($lead['phone']): ?>
-                            📱 <?= htmlspecialchars($lead['phone']) ?><br>
+                            📱 <?php echo htmlspecialchars($lead['phone']); ?><br>
                         <?php endif; ?>
                         <?php if ($lead['email']): ?>
-                            ✉️ <?= htmlspecialchars($lead['email']) ?>
+                            ✉️ <?php echo htmlspecialchars($lead['email']); ?>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars($lead['service_name'] ?? 'Не указано') ?></td>
+                    <td><?php echo htmlspecialchars($lead['service_name'] ?? 'Не указано'); ?></td>
                     <td>
                         <?php if ($lead['budget_from'] || $lead['budget_to']): ?>
                             <?php if ($lead['budget_from']): ?>
-                                от <?= number_format($lead['budget_from'], 0, ',', ' ') ?> ₽
+                                от <?php echo number_format($lead['budget_from'], 0, ',', ' '); ?> ₽
                             <?php endif; ?>
                             <?php if ($lead['budget_to']): ?>
-                                до <?= number_format($lead['budget_to'], 0, ',', ' ') ?> ₽
+                                до <?php echo number_format($lead['budget_to'], 0, ',', ' '); ?> ₽
                             <?php endif; ?>
                         <?php else: ?>
                             Не указан
                         <?php endif; ?>
                     </td>
                     <td>
-                        <span class="status-badge status-<?= $lead['status'] ?>">
-                            <?= htmlspecialchars($lead['status']) ?>
+                        <span class="status-badge status-<?php echo $lead['status']; ?>">
+                            <?php echo htmlspecialchars($lead['status']); ?>
                         </span>
                     </td>
-                    <td><?= date('d.m.Y H:i', strtotime($lead['created_at'])) ?></td>
+                    <td><?php echo date('d.m.Y H:i', strtotime($lead['created_at'])); ?></td>
                     <td>
-                        <a href="/admin/lead.php?id=<?= $lead['id'] ?>" class="btn-small">Просмотр</a>
+                        <a href="/admin/lead.php?id=<?php echo $lead['id']; ?>" class="btn-small">Просмотр</a>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -111,9 +111,9 @@ include __DIR__ . '/includes/header.php';
         <div class="pagination">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <?php if ($i === $page): ?>
-                    <span class="current"><?= $i ?></span>
+                    <span class="current"><?php echo $i; ?></span>
                 <?php else: ?>
-                    <a href="?page=<?= $i ?><?= $statusFilter ? '&status=' . urlencode($statusFilter) : '' ?>"><?= $i ?></a>
+                    <a href="?page=<?php echo $i; ?><?php echo $statusFilter ? '&status=' . urlencode($statusFilter) : ''; ?>"><?php echo $i; ?></a>
                 <?php endif; ?>
             <?php endfor; ?>
         </div>

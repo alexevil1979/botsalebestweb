@@ -78,16 +78,16 @@ include __DIR__ . '/includes/header.php';
             <tbody>
                 <?php foreach ($services as $service): ?>
                     <tr>
-                        <td><?= $service['id'] ?></td>
-                        <td><strong><?= htmlspecialchars($service['name']) ?></strong></td>
-                        <td><?= htmlspecialchars(mb_substr($service['description'] ?? '', 0, 100)) ?><?= mb_strlen($service['description'] ?? '') > 100 ? '...' : '' ?></td>
+                        <td><?php echo $service['id']; ?></td>
+                        <td><strong><?php echo htmlspecialchars($service['name']); ?></strong></td>
+                        <td><?php echo htmlspecialchars(mb_substr($service['description'] ?? '', 0, 100)); ?><?php echo mb_strlen($service['description'] ?? '') > 100 ? '...' : ''; ?></td>
                         <td>
                             <?php if ($service['price_from'] || $service['price_to']): ?>
                                 <?php if ($service['price_from']): ?>
-                                    от <?= number_format($service['price_from'], 0, ',', ' ') ?> ₽
+                                    от <?php echo number_format($service['price_from'], 0, ',', ' '); ?> ₽
                                 <?php endif; ?>
                                 <?php if ($service['price_to']): ?>
-                                    до <?= number_format($service['price_to'], 0, ',', ' ') ?> ₽
+                                    до <?php echo number_format($service['price_to'], 0, ',', ' '); ?> ₽
                                 <?php endif; ?>
                             <?php else: ?>
                                 Не указана
@@ -100,10 +100,10 @@ include __DIR__ . '/includes/header.php';
                                 <span class="status-badge status-lost">Нет</span>
                             <?php endif; ?>
                         </td>
-                        <td><?= $service['sort_order'] ?></td>
+                        <td><?php echo $service['sort_order']; ?></td>
                         <td>
-                            <a href="/admin/services.php?action=edit&id=<?= $service['id'] ?>" class="btn-small">Редактировать</a>
-                            <a href="/admin/services.php?action=delete&id=<?= $service['id'] ?>&csrf_token=<?= urlencode($csrfToken) ?>" 
+                            <a href="/admin/services.php?action=edit&id=<?php echo $service['id']; ?>" class="btn-small">Редактировать</a>
+                            <a href="/admin/services.php?action=delete&id=<?php echo $service['id']; ?>&csrf_token=<?php echo urlencode($csrfToken); ?>" 
                                class="btn-small btn-danger" 
                                onclick="return confirm('Удалить услугу?')">Удалить</a>
                         </td>
@@ -118,41 +118,41 @@ include __DIR__ . '/includes/header.php';
         </table>
 
     <?php elseif ($action === 'create' || $action === 'edit'): ?>
-        <h2><?= $action === 'create' ? 'Добавить услугу' : 'Редактировать услугу' ?></h2>
+        <h2><?php echo $action === 'create' ? 'Добавить услугу' : 'Редактировать услугу'; ?></h2>
 
         <form method="POST" style="max-width: 600px;">
-            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+            <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
 
             <div class="form-group">
                 <label for="name">Название *</label>
-                <input type="text" id="name" name="name" value="<?= htmlspecialchars($service['name'] ?? '') ?>" required>
+                <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($service['name'] ?? ''); ?>" required>
             </div>
 
             <div class="form-group">
                 <label for="description">Описание</label>
-                <textarea id="description" name="description"><?= htmlspecialchars($service['description'] ?? '') ?></textarea>
+                <textarea id="description" name="description"><?php echo htmlspecialchars($service['description'] ?? ''); ?></textarea>
             </div>
 
             <div class="form-group">
                 <label for="price_from">Цена от (₽)</label>
-                <input type="number" id="price_from" name="price_from" value="<?= $service['price_from'] ?? '' ?>" step="0.01" min="0">
+                <input type="number" id="price_from" name="price_from" value="<?php echo $service['price_from'] ?? ''; ?>" step="0.01" min="0">
             </div>
 
             <div class="form-group">
                 <label for="price_to">Цена до (₽)</label>
-                <input type="number" id="price_to" name="price_to" value="<?= $service['price_to'] ?? '' ?>" step="0.01" min="0">
+                <input type="number" id="price_to" name="price_to" value="<?php echo $service['price_to'] ?? ''; ?>" step="0.01" min="0">
             </div>
 
             <div class="form-group">
                 <label>
-                    <input type="checkbox" name="active" <?= ($service['active'] ?? 1) ? 'checked' : '' ?>>
+                    <input type="checkbox" name="active" <?php echo ($service['active'] ?? 1) ? 'checked' : ''; ?>>
                     Активна
                 </label>
             </div>
 
             <div class="form-group">
                 <label for="sort_order">Порядок сортировки</label>
-                <input type="number" id="sort_order" name="sort_order" value="<?= $service['sort_order'] ?? 0 ?>" min="0">
+                <input type="number" id="sort_order" name="sort_order" value="<?php echo $service['sort_order'] ?? 0; ?>" min="0">
             </div>
 
             <div style="display: flex; gap: 1rem;">

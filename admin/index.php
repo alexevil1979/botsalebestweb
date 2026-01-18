@@ -42,19 +42,19 @@ include __DIR__ . '/includes/header.php';
 
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-value"><?= $stats['total_users'] ?></div>
+            <div class="stat-value"><?php echo $stats['total_users']; ?></div>
             <div class="stat-label">Пользователей</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value"><?= $stats['active_dialogs'] ?></div>
+            <div class="stat-value"><?php echo $stats['active_dialogs']; ?></div>
             <div class="stat-label">Активных диалогов</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value"><?= $stats['total_leads'] ?></div>
+            <div class="stat-value"><?php echo $stats['total_leads']; ?></div>
             <div class="stat-label">Всего лидов</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value"><?= $stats['new_leads'] ?></div>
+            <div class="stat-value"><?php echo $stats['new_leads']; ?></div>
             <div class="stat-label">Новых лидов</div>
         </div>
     </div>
@@ -76,22 +76,22 @@ include __DIR__ . '/includes/header.php';
                 <tbody>
                     <?php foreach ($recentLeads as $lead): ?>
                         <tr>
-                            <td>#<?= $lead['id'] ?></td>
+                            <td>#<?php echo $lead['id']; ?></td>
                             <td>
-                                <?= htmlspecialchars($lead['first_name'] ?? $lead['username'] ?? 'N/A') ?>
+                                <?php echo htmlspecialchars($lead['first_name'] ?? $lead['username'] ?? 'N/A'); ?>
                                 <?php if ($lead['telegram_id']): ?>
-                                    <br><small>@<?= $lead['telegram_id'] ?></small>
+                                    <br><small>@<?php echo $lead['telegram_id']; ?></small>
                                 <?php endif; ?>
                             </td>
-                            <td><?= htmlspecialchars($lead['service_name'] ?? 'Не указано') ?></td>
+                            <td><?php echo htmlspecialchars($lead['service_name'] ?? 'Не указано'); ?></td>
                             <td>
-                                <span class="status-badge status-<?= $lead['status'] ?>">
-                                    <?= htmlspecialchars($lead['status']) ?>
+                                <span class="status-badge status-<?php echo $lead['status']; ?>">
+                                    <?php echo htmlspecialchars($lead['status']); ?>
                                 </span>
                             </td>
-                            <td><?= date('d.m.Y H:i', strtotime($lead['created_at'])) ?></td>
+                            <td><?php echo date('d.m.Y H:i', strtotime($lead['created_at'])); ?></td>
                             <td>
-                                <a href="/admin/lead.php?id=<?= $lead['id'] ?>" class="btn-small">Просмотр</a>
+                                <a href="/admin/lead.php?id=<?php echo $lead['id']; ?>" class="btn-small">Просмотр</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -123,18 +123,18 @@ include __DIR__ . '/includes/header.php';
                     <?php foreach ($recentDialogs as $dialog): ?>
                         <tr>
                             <td>
-                                <?= htmlspecialchars($dialog['first_name'] ?? $dialog['username'] ?? 'N/A') ?>
-                                <br><small>@<?= $dialog['telegram_id'] ?></small>
+                                <?php echo htmlspecialchars($dialog['first_name'] ?? $dialog['username'] ?? 'N/A'); ?>
+                                <br><small>@<?php echo $dialog['telegram_id']; ?></small>
                             </td>
-                            <td><?= htmlspecialchars($dialog['current_step'] ?? 'N/A') ?></td>
+                            <td><?php echo htmlspecialchars($dialog['current_step'] ?? 'N/A'); ?></td>
                             <td>
-                                <span class="status-badge status-<?= $dialog['status'] ?>">
-                                    <?= htmlspecialchars($dialog['status']) ?>
+                                <span class="status-badge status-<?php echo $dialog['status']; ?>">
+                                    <?php echo htmlspecialchars($dialog['status']); ?>
                                 </span>
                             </td>
-                            <td><?= date('d.m.Y H:i', strtotime($dialog['updated_at'])) ?></td>
+                            <td><?php echo date('d.m.Y H:i', strtotime($dialog['updated_at'])); ?></td>
                             <td>
-                                <a href="/admin/chat.php?id=<?= $dialog['id'] ?>" class="btn-small">Чат</a>
+                                <a href="/admin/chat.php?id=<?php echo $dialog['id']; ?>" class="btn-small">Чат</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
