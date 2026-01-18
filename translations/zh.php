@@ -10,7 +10,7 @@ return [
     
     // Clarification
     'clarification_services' => "太好了！根据您的需求，我建议考虑以下选项：\n\n请选择适当的选项：",
-    'clarification_no_services' => "感谢您提供的信息！让我们讨论细节。您能留下联系方式吗？",
+    'clarification_no_services' => "感谢您提供的信息！要讨论您项目的细节，请联系我们的经理：\n\n👤 @Branch",
     
     // Service selection
     'service_selected' => "很好的选择！{service_name}\n\n💰 价格：{price_from} - {price_to} ₽\n\n{description}\n\n准备好讨论细节了吗？",

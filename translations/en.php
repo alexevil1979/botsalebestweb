@@ -10,7 +10,7 @@ return [
     
     // Clarification
     'clarification_services' => "Great! Based on your requirements, I suggest considering the following options:\n\nChoose the appropriate option:",
-    'clarification_no_services' => "Thank you for the information! Let's discuss the details. Can you leave your contact information?",
+    'clarification_no_services' => "Thank you for the information! To discuss the details of your project, please contact our manager:\n\n👤 @Branch",
     
     // Service selection
     'service_selected' => "Great choice! {service_name}\n\n💰 Price: {price_from} - {price_to} ₽\n\n{description}\n\nReady to discuss details?",
