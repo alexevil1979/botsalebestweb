@@ -86,6 +86,11 @@ if ($action === 'edit' && $serviceId) {
     }
 }
 
+// Для формы редактирования нужны категории
+if ($action === 'create' || $action === 'edit') {
+    $categories = Service::getCategories(false);
+}
+
 include __DIR__ . '/includes/header.php';
 ?>
 <div class="container">
