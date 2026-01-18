@@ -261,13 +261,42 @@ include __DIR__ . '/includes/header.php';
             </div>
 
             <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_hourly" id="is_hourly" <?php echo ($service['is_hourly'] ?? 0) ? 'checked' : ''; ?> onchange="togglePriceType()">
+                    Почасовая оплата
+                </label>
+            </div>
+
+            <div id="hourly_rate_group" class="form-group" style="display: <?php echo ($service['is_hourly'] ?? 0) ? 'block' : 'none'; ?>;">
+                <label for="hourly_rate">Ставка за час ($)</label>
+                <input type="number" id="hourly_rate" name="hourly_rate" value="<?php echo $service['hourly_rate'] ?? ''; ?>" step="0.01" min="0">
+            </div>
+
+            <div id="price_range_group" class="form-group" style="display: <?php echo ($service['is_hourly'] ?? 0) ? 'none' : 'block'; ?>;">
                 <label for="price_from">Цена от (₽)</label>
                 <input type="number" id="price_from" name="price_from" value="<?php echo $service['price_from'] ?? ''; ?>" step="0.01" min="0">
             </div>
 
-            <div class="form-group">
+            <div id="price_to_group" class="form-group" style="display: <?php echo ($service['is_hourly'] ?? 0) ? 'none' : 'block'; ?>;">
                 <label for="price_to">Цена до (₽)</label>
                 <input type="number" id="price_to" name="price_to" value="<?php echo $service['price_to'] ?? ''; ?>" step="0.01" min="0">
+            </div>
+
+            <div class="form-group">
+                <label for="parent_id">Родительская категория</label>
+                <select id="parent_id" name="parent_id">
+                    <option value="">Нет (корневая категория или услуга)</option>
+                    <?php foreach ($categories as $cat): ?>
+                        <option value="<?php echo $cat['id']; ?>" <?php echo ($service['parent_id'] ?? null) == $cat['id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($cat['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Категория (код)</label>
+                <input type="text" id="category" name="category" value="<?php echo htmlspecialchars($service['category'] ?? ''); ?>" placeholder="web_development, bots_automation, etc.">
             </div>
 
             <div class="form-group">
@@ -287,6 +316,15 @@ include __DIR__ . '/includes/header.php';
                 <a href="/admin/services.php" class="btn btn-danger">Отмена</a>
             </div>
         </form>
+
+        <script>
+        function togglePriceType() {
+            const isHourly = document.getElementById('is_hourly').checked;
+            document.getElementById('hourly_rate_group').style.display = isHourly ? 'block' : 'none';
+            document.getElementById('price_range_group').style.display = isHourly ? 'none' : 'block';
+            document.getElementById('price_to_group').style.display = isHourly ? 'none' : 'block';
+        }
+        </script>
     <?php endif; ?>
 </div>
 <?php include __DIR__ . '/includes/footer.php'; ?>
