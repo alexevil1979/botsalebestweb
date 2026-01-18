@@ -196,6 +196,28 @@ curl -X POST "https://api.telegram.org/bot8496559310:AAFDB-mRyv4pOh_4Sj2LdtNWYZ4
 - [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) - Полный гайд
 - [ENV_SETUP_EXAMPLE.md](ENV_SETUP_EXAMPLE.md) - Пример .env
 - [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) - Автодеплой
+- **[APPLY_CHANGES_VPS.md](APPLY_CHANGES_VPS.md)** ⭐ **Используйте для применения изменений на VPS**
+
+---
+
+## 🔄 Применение изменений на VPS
+
+После любых изменений в коде выполните на VPS:
+
+```bash
+cd /ssd/www/bots/botsalebestwebstudio
+git pull origin main
+composer install --no-dev --optimize-autoloader
+php migrations/migrate.php
+sudo systemctl reload apache2
+```
+
+**Или используйте скрипт:**
+```bash
+bash deploy/deploy.sh
+```
+
+**📖 Подробная инструкция:** [APPLY_CHANGES_VPS.md](APPLY_CHANGES_VPS.md)
 
 ---
 
