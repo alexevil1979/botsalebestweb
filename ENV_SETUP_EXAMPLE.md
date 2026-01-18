@@ -16,12 +16,12 @@ TELEGRAM_WEBHOOK_SECRET=fkew323f32f23f2332f
 TELEGRAM_WEBHOOK_URL=https://botsale.1tlt.ru/bot/webhook.php
 
 # Database
-DB_HOST=localhost
+DB_HOST=127.0.0.1
+DB_PORT=3306
 DB_NAME=telegram_bot
 DB_USER=root
 DB_PASS=qweasd333123
 DB_CHARSET=utf8mb4
-DB_SOCKET=/tmp/mysql.sock  # Используйте сокет вместо host для подключения
 
 # Redis
 REDIS_HOST=127.0.0.1

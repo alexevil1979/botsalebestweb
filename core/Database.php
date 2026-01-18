@@ -12,19 +12,14 @@ class Database
     public static function getInstance(): PDO
     {
         if (self::$instance === null) {
-            $host = Config::get('DB_HOST', 'localhost');
+            $host = Config::get('DB_HOST', '127.0.0.1');
+            $port = Config::get('DB_PORT', '3306');
             $dbname = Config::get('DB_NAME');
             $user = Config::get('DB_USER');
             $pass = Config::get('DB_PASS', '');
             $charset = Config::get('DB_CHARSET', 'utf8mb4');
-            $socket = Config::get('DB_SOCKET', '');
 
-            // Если указан сокет, используем его вместо host
-            if (!empty($socket)) {
-                $dsn = "mysql:unix_socket={$socket};dbname={$dbname};charset={$charset}";
-            } else {
-                $dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
-            }
+            $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
 
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

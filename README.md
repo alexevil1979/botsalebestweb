@@ -62,7 +62,8 @@ TELEGRAM_WEBHOOK_SECRET=your_webhook_secret_here
 TELEGRAM_WEBHOOK_URL=https://yourdomain.com/bot/webhook.php
 
 # Database
-DB_HOST=localhost
+DB_HOST=127.0.0.1
+DB_PORT=3306
 DB_NAME=telegram_bot
 DB_USER=root
 DB_PASS=
