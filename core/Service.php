@@ -46,13 +46,15 @@ class Service
     public static function create(array $data): int
     {
         Database::execute(
-            "INSERT INTO services (name, description, price_from, price_to, active, sort_order, parent_id, category) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO services (name, description, price_from, price_to, hourly_rate, is_hourly, active, sort_order, parent_id, category) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['name'],
                 $data['description'] ?? null,
                 $data['price_from'] ?? null,
                 $data['price_to'] ?? null,
+                $data['hourly_rate'] ?? null,
+                $data['is_hourly'] ?? 0,
                 $data['active'] ?? 1,
                 $data['sort_order'] ?? 0,
                 $data['parent_id'] ?? null,
@@ -67,7 +69,7 @@ class Service
         $fields = [];
         $params = [];
 
-        foreach (['name', 'description', 'price_from', 'price_to', 'active', 'sort_order', 'parent_id', 'category'] as $field) {
+        foreach (['name', 'description', 'price_from', 'price_to', 'hourly_rate', 'is_hourly', 'active', 'sort_order', 'parent_id', 'category'] as $field) {
             if (isset($data[$field])) {
                 $fields[] = "{$field} = ?";
                 $params[] = $data[$field];

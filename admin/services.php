@@ -22,8 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && Auth::verifyCSRF($_POST['csrf_token
             'description' => $_POST['description'] ?? '',
             'price_from' => !empty($_POST['price_from']) ? (float)$_POST['price_from'] : null,
             'price_to' => !empty($_POST['price_to']) ? (float)$_POST['price_to'] : null,
+            'hourly_rate' => !empty($_POST['hourly_rate']) ? (float)$_POST['hourly_rate'] : null,
+            'is_hourly' => isset($_POST['is_hourly']) ? 1 : 0,
             'active' => isset($_POST['active']) ? 1 : 0,
             'sort_order' => (int)($_POST['sort_order'] ?? 0),
+            'parent_id' => !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : null,
+            'category' => !empty($_POST['category']) ? $_POST['category'] : null,
         ];
 
         if ($postAction === 'create') {
@@ -56,8 +60,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && Auth::verifyCSRF($_POST['csrf_token
 $action = $_GET['action'] ?? 'list';
 $serviceId = (int)($_GET['id'] ?? 0);
 
-$services = Service::getAll(false);
+// Получаем категории и услуги для дерева
+$allServices = Service::getAll(false);
+$categories = Service::getCategories(false);
 $csrfToken = Auth::getCSRFToken();
+
+// Группируем услуги по категориям
+$servicesByCategory = [];
+$servicesByParent = [];
+foreach ($allServices as $service) {
+    if ($service['parent_id'] === null && ($service['price_from'] !== null || $service['price_to'] !== null)) {
+        // Услуга без родителя (но с ценой) - добавляем в общий список
+        $servicesByCategory['_root'][] = $service;
+    } elseif ($service['parent_id'] !== null) {
+        // Услуга с родителем
+        $servicesByParent[$service['parent_id']][] = $service;
+    }
+}
 
 if ($action === 'edit' && $serviceId) {
     $service = Service::getById($serviceId);
@@ -145,16 +164,22 @@ include __DIR__ . '/includes/header.php';
         </form>
 
         <script>
+        function toggleCategory(categoryId) {
+            const content = document.getElementById('content-' + categoryId);
+            const toggle = document.getElementById('toggle-' + categoryId);
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
-            const selectAll = document.getElementById('selectAll');
             const checkboxes = document.querySelectorAll('.service-checkbox');
             const deleteMultipleBtn = document.getElementById('deleteMultipleBtn');
-
-            // Выбрать все / снять выбор
-            selectAll.addEventListener('change', function() {
-                checkboxes.forEach(cb => cb.checked = this.checked);
-                updateDeleteButton();
-            });
 
             // Обновление кнопки удаления при изменении чекбоксов
             checkboxes.forEach(cb => {
@@ -169,13 +194,6 @@ include __DIR__ . '/includes/header.php';
                     deleteMultipleBtn.style.display = 'none';
                 }
             }
-
-            // Обновление "Выбрать все" при изменении отдельных чекбоксов
-            checkboxes.forEach(cb => {
-                cb.addEventListener('change', function() {
-                    selectAll.checked = Array.from(checkboxes).every(cb => cb.checked);
-                });
-            });
         });
 
         function deleteSelected() {
