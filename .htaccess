@@ -5,10 +5,12 @@ RewriteEngine On
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# PHP processing (ensure PHP files are processed)
-<FilesMatch \.php$>
-    SetHandler application/x-httpd-php
-</FilesMatch>
+# PHP-FPM processing (ensure PHP files are processed via PHP-FPM)
+# Note: This is handled by Apache virtual host configuration
+# If needed, uncomment and adjust path to PHP-FPM socket:
+# <FilesMatch \.php$>
+#     SetHandler "proxy:unix:/var/run/php/php8.1-fpm.sock|fcgi://localhost"
+# </FilesMatch>
 
 # Admin panel routing
 RewriteCond %{REQUEST_FILENAME} !-f
