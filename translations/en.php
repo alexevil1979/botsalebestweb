@@ -9,8 +9,10 @@ return [
     'task_definition_response' => "Got it! You want: {task_description}\n\nPlease clarify:\n• What is your budget?\n• When do you need to launch?\n• Are there any special requirements?",
     
     // Clarification
-    'clarification_services' => "Great! Based on your requirements, I suggest considering the following options:\n\nChoose the appropriate option:",
+    'clarification_services' => "Great! Based on your requirements, I suggest considering the following options:\n\nChoose a service category:",
     'clarification_no_services' => "Thank you for the information! To discuss the details of your project, please contact our manager:\n\n👤 @Branch",
+    'category_services' => "Services in this category:\n\nChoose a suitable service:",
+    'category_no_services' => "There are no services in this category yet. Choose another category or contact a manager:\n\n👤 @Branch",
     
     // Service selection
     'service_selected' => "Great choice! {service_name}\n\n💰 Price: {price_from} - {price_to} ₽\n\n{description}\n\nReady to discuss details?",
@@ -31,6 +33,7 @@ return [
     'button_start' => '🚀 Start',
     'button_phone' => '📱 Leave phone',
     'button_email' => '✉️ Leave email',
+    'button_back_categories' => '⬅️ Back to categories',
     
     // Price
     'price_from' => 'from',
