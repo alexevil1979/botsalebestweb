@@ -71,6 +71,17 @@ class TelegramAPI
         ]);
     }
 
+    public function sendMessageWithInlineKeyboard(int $chatId, string $text, array $inlineKeyboard): ?array
+    {
+        $replyMarkup = [
+            'inline_keyboard' => $inlineKeyboard,
+        ];
+
+        return $this->sendMessage($chatId, $text, [
+            'reply_markup' => json_encode($replyMarkup),
+        ]);
+    }
+
     public function answerCallbackQuery(string $callbackQueryId, array $options = []): ?array
     {
         $data = array_merge([

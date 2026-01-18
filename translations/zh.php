@@ -26,6 +26,7 @@ return [
     'contact_success' => "谢谢！✅\n\n您的申请已被接受。我们的经理将很快与您联系。\n\n申请编号：#{lead_id}",
     
     // Buttons
+    'button_start' => '🚀 开始',
     'button_phone' => '📱 留下电话',
     'button_email' => '✉️ 留下电子邮件',
     

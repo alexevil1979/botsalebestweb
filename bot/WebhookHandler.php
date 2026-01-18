@@ -87,6 +87,19 @@ class WebhookHandler
         // Get or create dialog
         $dialog = Dialog::getOrCreate($userId, $chatId);
         $dialogId = $dialog['id'];
+        
+        // Handle /start command - reset to initial state
+        if ($text === '/start') {
+            $initialStep = StateMachine::getInitialState();
+            Dialog::updateStep($dialogId, $initialStep);
+            $currentStep = $initialStep;
+            $stateKey = "dialog:{$dialogId}";
+            $stateData = ['current_step' => $initialStep, 'language' => $userLang];
+            $this->processStep($chatId, $userId, $dialogId, $initialStep, '', $stateData, $userLang);
+            Redis::set($stateKey, $stateData, 86400);
+            return;
+        }
+        
         $currentStep = $dialog['current_step'] ?? StateMachine::getInitialState();
 
         // Get dialog state from Redis
@@ -138,7 +151,13 @@ class WebhookHandler
         $stateData['language'] = $userLang;
 
         // Process callback
-        if (strpos($data, 'service_') === 0) {
+        if ($data === 'start_dialog') {
+            // Начать новый диалог - сброс к начальному состоянию
+            $initialStep = StateMachine::getInitialState();
+            Dialog::updateStep($dialogId, $initialStep);
+            $stateData['current_step'] = $initialStep;
+            $this->processStep($chatId, $userId, $dialogId, $initialStep, '', $stateData, $userLang);
+        } elseif (strpos($data, 'service_') === 0) {
             $serviceId = (int)str_replace('service_', '', $data);
             $stateData['selected_service_id'] = $serviceId;
             $this->processStep($chatId, $userId, $dialogId, $currentStep, '', $stateData, $userLang);
@@ -182,7 +201,18 @@ class WebhookHandler
         $template = Translator::get('greeting', $lang);
         $text = $this->llm->improveText($template, [], $lang);
 
-        $this->telegram->sendMessage($chatId, $text);
+        // Добавляем inline keyboard с кнопкой "Старт"
+        $startButtonText = Translator::get('button_start', $lang);
+        $inlineKeyboard = [
+            [
+                [
+                    'text' => $startButtonText,
+                    'callback_data' => 'start_dialog'
+                ]
+            ]
+        ];
+
+        $this->telegram->sendMessageWithInlineKeyboard($chatId, $text, $inlineKeyboard);
         Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
 
         $nextStep = StateMachine::getNextState('greeting');

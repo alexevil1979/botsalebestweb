@@ -26,6 +26,7 @@ return [
     'contact_success' => "Thank you! ✅\n\nYour application has been accepted. Our manager will contact you soon.\n\nApplication number: #{lead_id}",
     
     // Buttons
+    'button_start' => '🚀 Start',
     'button_phone' => '📱 Leave phone',
     'button_email' => '✉️ Leave email',
     

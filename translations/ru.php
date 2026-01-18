@@ -26,6 +26,7 @@ return [
     'contact_success' => "Спасибо! ✅\n\nВаша заявка принята. Наш менеджер свяжется с вами в ближайшее время.\n\nНомер заявки: #{lead_id}",
     
     // Buttons
+    'button_start' => '🚀 Начать',
     'button_phone' => '📱 Оставить телефон',
     'button_email' => '✉️ Оставить email',
     
