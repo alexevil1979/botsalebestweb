@@ -138,95 +138,85 @@ sudo systemctl enable redis
 redis-cli ping
 ```
 
-### 6. Настройка веб-сервера
+### 6. Настройка веб-сервера (Apache)
 
-#### Nginx
-
-Создайте конфигурацию `/etc/nginx/sites-available/telegram-bot`:
-
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-    root /ssd/www/bots/botsalebestwebstudio;
-    index index.php;
-
-    location / {
-        try_files $uri $uri/ =404;
-    }
-
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    location /bot/webhook.php {
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_index webhook.php;
-        fastcgi_param SCRIPT_FILENAME $document_root/bot/webhook.php;
-        include fastcgi_params;
-        
-        # Webhook secret header
-        fastcgi_param HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN $http_x_telegram_bot_api_secret_token;
-    }
-
-    location /admin {
-        try_files $uri $uri/ /admin/index.php;
-    }
-}
-```
-
-Активируйте конфигурацию:
-
+#### Включение необходимых модулей
 ```bash
-sudo ln -s /etc/nginx/sites-available/telegram-bot /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl
 ```
 
-#### Apache
+#### Создание конфигурации
 
-Создайте виртуальный хост в `/etc/apache2/sites-available/telegram-bot.conf`:
+Создайте виртуальный хост в `/etc/apache2/sites-available/botsalebestwebstudio.conf`:
 
 ```apache
 <VirtualHost *:80>
     ServerName yourdomain.com
+    ServerAlias www.yourdomain.com
     DocumentRoot /ssd/www/bots/botsalebestwebstudio
 
+    # Логи
+    ErrorLog ${APACHE_LOG_DIR}/botsalebestwebstudio_error.log
+    CustomLog ${APACHE_LOG_DIR}/botsalebestwebstudio_access.log combined
+
+    # Основные настройки
     <Directory /ssd/www/bots/botsalebestwebstudio>
+        Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 
-    <Directory /ssd/www/bots/botsalebestwebstudio/bot>
+    # PHP обработка
+    <FilesMatch \.php$>
+        SetHandler application/x-httpd-php
+    </FilesMatch>
+
+    # Админ-панель
+    <Directory /ssd/www/bots/botsalebestwebstudio/admin>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
         Require all granted
     </Directory>
 
-    <Directory /ssd/www/bots/botsalebestwebstudio/admin>
+    # Webhook для Telegram
+    <Directory /ssd/www/bots/botsalebestwebstudio/bot>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
         Require all granted
     </Directory>
+
+    # Защита .env файла
+    <FilesMatch "^\.env">
+        Require all denied
+    </FilesMatch>
+
+    # Защита других скрытых файлов
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
+
+    # Передача заголовков для webhook secret
+    <IfModule mod_headers.c>
+        RequestHeader set X-Telegram-Bot-Api-Secret-Token "expr=%{HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN}"
+    </IfModule>
 </VirtualHost>
 ```
 
 Активируйте:
 
 ```bash
-sudo a2ensite telegram-bot
+sudo a2ensite botsalebestwebstudio.conf
+sudo apache2ctl configtest
 sudo systemctl reload apache2
 ```
 
 ### 7. Настройка SSL (Let's Encrypt)
 
 ```bash
-sudo certbot --nginx -d yourdomain.com
-```
-
-Или для Apache:
-
-```bash
-sudo certbot --apache -d yourdomain.com
+sudo apt install -y certbot python3-certbot-apache
+sudo certbot --apache -d yourdomain.com -d www.yourdomain.com
 ```
 
 ### 8. Настройка Telegram Webhook
@@ -407,7 +397,7 @@ VALUES ('Лендинг', 'Одностраничный сайт', 15000, 50000,
    composer install --no-dev
    php migrations/migrate.php
    php migrations/add_preferred_language.php
-   sudo systemctl reload php8.1-fpm
+   sudo systemctl reload apache2
    ```
 
 ## 🐛 Логи и отладка

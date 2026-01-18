@@ -44,10 +44,10 @@ if command -v redis-cli &> /dev/null; then
     redis-cli FLUSHDB || echo -e "${YELLOW}⚠ Redis flush failed (may not be critical)${NC}"
 fi
 
-# Reload PHP-FPM (adjust based on your setup)
+# Reload Apache (adjust based on your setup)
 if command -v systemctl &> /dev/null; then
-    echo "🔄 Reloading PHP-FPM..."
-    sudo systemctl reload php8.1-fpm || sudo systemctl reload php-fpm || echo -e "${YELLOW}⚠ PHP-FPM reload failed (may need manual restart)${NC}"
+    echo "🔄 Reloading Apache..."
+    sudo systemctl reload apache2 || echo -e "${YELLOW}⚠ Apache reload failed (may need manual restart)${NC}"
 fi
 
 # Set proper permissions

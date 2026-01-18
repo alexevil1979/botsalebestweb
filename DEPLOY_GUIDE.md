@@ -25,7 +25,7 @@ sudo apt update && sudo apt upgrade -y
 
 #### PHP 8.1 и расширения
 ```bash
-sudo apt install -y php8.1 php8.1-fpm php8.1-mysql php8.1-redis php8.1-curl php8.1-mbstring php8.1-xml php8.1-zip
+sudo apt install -y php8.1 php8.1-cli php8.1-mysql php8.1-redis php8.1-curl php8.1-mbstring php8.1-xml php8.1-zip libapache2-mod-php8.1
 ```
 
 #### MySQL
@@ -54,9 +54,10 @@ sudo chmod +x /usr/local/bin/composer
 sudo apt install -y git
 ```
 
-#### Nginx
+#### Apache
 ```bash
-sudo apt install -y nginx
+sudo apt install -y apache2
+sudo apt install -y libapache2-mod-php8.1
 ```
 
 ---
@@ -192,84 +193,86 @@ sudo chmod -R 777 /ssd/www/bots/botsalebestwebstudio/logs
 
 ---
 
-## 📋 Шаг 8: Настройка Nginx
+## 📋 Шаг 8: Настройка Apache
 
-### 8.1. Создание конфигурации
+### 8.1. Включение необходимых модулей
 ```bash
-sudo nano /etc/nginx/sites-available/botsalebestwebstudio
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl
 ```
 
-### 8.2. Содержимое конфигурации
+### 8.2. Создание конфигурации
+```bash
+sudo nano /etc/apache2/sites-available/botsalebestwebstudio.conf
+```
 
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com;
-    root /ssd/www/bots/botsalebestwebstudio;
-    index index.php;
+### 8.3. Содержимое конфигурации
+
+```apache
+<VirtualHost *:80>
+    ServerName yourdomain.com
+    ServerAlias www.yourdomain.com
+    DocumentRoot /ssd/www/bots/botsalebestwebstudio
 
     # Логи
-    access_log /var/log/nginx/botsalebestwebstudio_access.log;
-    error_log /var/log/nginx/botsalebestwebstudio_error.log;
+    ErrorLog ${APACHE_LOG_DIR}/botsalebestwebstudio_error.log
+    CustomLog ${APACHE_LOG_DIR}/botsalebestwebstudio_access.log combined
 
     # Основные настройки
-    client_max_body_size 10M;
-
-    # Корневая директория
-    location / {
-        try_files $uri $uri/ =404;
-    }
+    <Directory /ssd/www/bots/botsalebestwebstudio>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
 
     # PHP обработка
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    # Webhook для Telegram
-    location /bot/webhook.php {
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_index webhook.php;
-        fastcgi_param SCRIPT_FILENAME $document_root/bot/webhook.php;
-        include fastcgi_params;
-        fastcgi_param HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN $http_x_telegram_bot_api_secret_token;
-        
-        # Отключение логирования для webhook
-        access_log off;
-    }
+    <FilesMatch \.php$>
+        SetHandler application/x-httpd-php
+    </FilesMatch>
 
     # Админ-панель
-    location /admin {
-        try_files $uri $uri/ /admin/index.php;
-    }
+    <Directory /ssd/www/bots/botsalebestwebstudio/admin>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Webhook для Telegram
+    <Directory /ssd/www/bots/botsalebestwebstudio/bot>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
 
     # Защита .env файла
-    location ~ /\.env {
-        deny all;
-        return 404;
-    }
+    <FilesMatch "^\.env">
+        Require all denied
+    </FilesMatch>
 
     # Защита других скрытых файлов
-    location ~ /\. {
-        deny all;
-        return 404;
-    }
-}
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
+
+    # Передача заголовков для webhook secret
+    <IfModule mod_headers.c>
+        RequestHeader set X-Telegram-Bot-Api-Secret-Token "expr=%{HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN}"
+    </IfModule>
+</VirtualHost>
 ```
 
 **Сохраните:** `Ctrl+O`, `Enter`, `Ctrl+X`
 
-### 8.3. Активация конфигурации
+### 8.4. Активация конфигурации
 ```bash
-sudo ln -s /etc/nginx/sites-available/botsalebestwebstudio /etc/nginx/sites-enabled/
-sudo nginx -t
+sudo a2ensite botsalebestwebstudio.conf
+sudo apache2ctl configtest
 ```
 
 Если тест прошел успешно:
 ```bash
-sudo systemctl reload nginx
+sudo systemctl reload apache2
 ```
 
 ---
@@ -278,15 +281,15 @@ sudo systemctl reload nginx
 
 ### 9.1. Установка Certbot
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
+sudo apt install -y certbot python3-certbot-apache
 ```
 
 ### 9.2. Получение сертификата
 ```bash
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+sudo certbot --apache -d yourdomain.com -d www.yourdomain.com
 ```
 
-Следуйте инструкциям на экране. Certbot автоматически обновит конфигурацию Nginx.
+Следуйте инструкциям на экране. Certbot автоматически обновит конфигурацию Apache.
 
 ### 9.3. Автоматическое обновление
 ```bash
@@ -315,11 +318,8 @@ curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" \
 
 ### 11.1. Проверка сервисов
 ```bash
-# Проверка PHP-FPM
-sudo systemctl status php8.1-fpm
-
-# Проверка Nginx
-sudo systemctl status nginx
+# Проверка Apache
+sudo systemctl status apache2
 
 # Проверка MySQL
 sudo systemctl status mysql
@@ -409,15 +409,15 @@ bash deploy/deploy.sh
 
 ## 🐛 Решение проблем
 
-### Проблема: 502 Bad Gateway
+### Проблема: 500 Internal Server Error или 403 Forbidden
 ```bash
-# Проверьте PHP-FPM
-sudo systemctl status php8.1-fpm
-sudo systemctl restart php8.1-fpm
+# Проверьте Apache
+sudo systemctl status apache2
+sudo systemctl restart apache2
 
 # Проверьте логи
-sudo tail -f /var/log/nginx/error.log
-sudo tail -f /var/log/php8.1-fpm.log
+sudo tail -f /var/log/apache2/error.log
+sudo tail -f /var/log/apache2/botsalebestwebstudio_error.log
 ```
 
 ### Проблема: Webhook не работает
@@ -429,7 +429,8 @@ php bot/setup-webhook.php
 ls -la /ssd/www/bots/botsalebestwebstudio/bot/webhook.php
 
 # Проверьте логи
-sudo tail -f /var/log/nginx/botsalebestwebstudio_error.log
+sudo tail -f /var/log/apache2/botsalebestwebstudio_error.log
+sudo tail -f /var/log/apache2/error.log
 ```
 
 ### Проблема: Ошибки подключения к БД
@@ -464,12 +465,10 @@ sudo chmod -R 777 /ssd/www/bots/botsalebestwebstudio/logs
 
 ### Просмотр логов
 ```bash
-# Логи Nginx
-sudo tail -f /var/log/nginx/botsalebestwebstudio_error.log
-sudo tail -f /var/log/nginx/botsalebestwebstudio_access.log
-
-# Логи PHP-FPM
-sudo tail -f /var/log/php8.1-fpm.log
+# Логи Apache
+sudo tail -f /var/log/apache2/botsalebestwebstudio_error.log
+sudo tail -f /var/log/apache2/botsalebestwebstudio_access.log
+sudo tail -f /var/log/apache2/error.log
 
 # Логи приложения (если настроены)
 tail -f /ssd/www/bots/botsalebestwebstudio/logs/php_errors.log
@@ -511,14 +510,14 @@ mysqladmin -u root -p status
 
 ## ✅ Чеклист деплоя
 
-- [ ] Установлены все зависимости (PHP, MySQL, Redis, Nginx, Composer)
+- [ ] Установлены все зависимости (PHP, MySQL, Redis, Apache, Composer)
 - [ ] Создана база данных и пользователь
 - [ ] Проект склонирован в `/ssd/www/bots/botsalebestwebstudio`
 - [ ] Создан и заполнен `.env` файл
 - [ ] Установлены зависимости через Composer
 - [ ] Запущены миграции БД
 - [ ] Настроены права доступа
-- [ ] Настроен Nginx
+- [ ] Настроен Apache
 - [ ] Настроен SSL (Let's Encrypt)
 - [ ] Настроен Telegram webhook
 - [ ] Проверена работа админки
