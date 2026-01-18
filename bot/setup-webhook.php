@@ -25,7 +25,7 @@ echo "Setting up webhook: {$webhookUrl}\n";
 $telegram = new TelegramAPI();
 $result = $telegram->setWebhook($webhookUrl, $secret);
 
-if ($result) {
+if ($result !== null) {
     echo "✅ Webhook set successfully!\n";
     
     // Verify webhook

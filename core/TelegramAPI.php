@@ -126,9 +126,22 @@ class TelegramAPI
             return null;
         }
 
+        if (empty($response)) {
+            error_log("Telegram API error: Empty response");
+            return null;
+        }
+
         $result = json_decode($response, true);
-        if (!$result || !isset($result['ok']) || !$result['ok']) {
-            error_log("Telegram API error: {$response}");
+        
+        // json_decode returns null on failure, false is not possible for associative array
+        if ($result === null && json_last_error() !== JSON_ERROR_NONE) {
+            error_log("Telegram API JSON decode error: " . json_last_error_msg() . " | Response: {$response}");
+            return null;
+        }
+
+        if (!is_array($result) || !isset($result['ok']) || !$result['ok']) {
+            $errorMsg = isset($result['description']) ? $result['description'] : 'Unknown error';
+            error_log("Telegram API error: {$errorMsg} | Response: {$response}");
             return null;
         }
 
