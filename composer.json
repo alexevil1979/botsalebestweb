@@ -1,0 +1,26 @@
+{
+    "name": "webstudio/telegram-sales-bot",
+    "description": "Production-ready Telegram bot for web studio sales",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "ext-redis": "*",
+        "ext-pdo": "*",
+        "ext-json": "*",
+        "ext-curl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bot\\": "bot/",
+            "Core\\": "core/",
+            "Admin\\": "admin/"
+        }
+    },
+    "scripts": {
+        "migrate": "php migrations/migrate.php"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

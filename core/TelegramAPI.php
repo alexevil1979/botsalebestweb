@@ -1,0 +1,137 @@
+<?php
+
+namespace Core;
+
+class TelegramAPI
+{
+    private string $token;
+    private string $apiUrl;
+
+    public function __construct()
+    {
+        $this->token = Config::get('TELEGRAM_BOT_TOKEN');
+        if (!$this->token) {
+            throw new \RuntimeException("TELEGRAM_BOT_TOKEN not configured");
+        }
+        $this->apiUrl = "https://api.telegram.org/bot{$this->token}/";
+    }
+
+    public function sendMessage(int $chatId, string $text, array $options = []): ?array
+    {
+        $data = array_merge([
+            'chat_id' => $chatId,
+            'text' => $text,
+            'parse_mode' => 'HTML',
+        ], $options);
+
+        return $this->request('sendMessage', $data);
+    }
+
+    public function sendMessageWithKeyboard(int $chatId, string $text, array $keyboard, bool $resize = true, bool $oneTime = false): ?array
+    {
+        $replyMarkup = [
+            'keyboard' => $keyboard,
+            'resize_keyboard' => $resize,
+            'one_time_keyboard' => $oneTime,
+        ];
+
+        return $this->sendMessage($chatId, $text, [
+            'reply_markup' => json_encode($replyMarkup),
+        ]);
+    }
+
+    public function removeKeyboard(int $chatId, string $text): ?array
+    {
+        $replyMarkup = [
+            'remove_keyboard' => true,
+        ];
+
+        return $this->sendMessage($chatId, $text, [
+            'reply_markup' => json_encode($replyMarkup),
+        ]);
+    }
+
+    public function editMessage(int $chatId, int $messageId, string $text, array $options = []): ?array
+    {
+        $data = array_merge([
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+            'text' => $text,
+            'parse_mode' => 'HTML',
+        ], $options);
+
+        return $this->request('editMessageText', $data);
+    }
+
+    public function deleteMessage(int $chatId, int $messageId): ?array
+    {
+        return $this->request('deleteMessage', [
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+        ]);
+    }
+
+    public function answerCallbackQuery(string $callbackQueryId, array $options = []): ?array
+    {
+        $data = array_merge([
+            'callback_query_id' => $callbackQueryId,
+        ], $options);
+
+        return $this->request('answerCallbackQuery', $data);
+    }
+
+    public function setWebhook(string $url, string $secret = ''): ?array
+    {
+        $data = ['url' => $url];
+        if ($secret) {
+            $data['secret_token'] = $secret;
+        }
+        return $this->request('setWebhook', $data);
+    }
+
+    public function deleteWebhook(): ?array
+    {
+        return $this->request('deleteWebhook');
+    }
+
+    public function getWebhookInfo(): ?array
+    {
+        return $this->request('getWebhookInfo');
+    }
+
+    private function request(string $method, array $data = []): ?array
+    {
+        $url = $this->apiUrl . $method;
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            error_log("Telegram API error: {$error}");
+            return null;
+        }
+
+        if ($httpCode !== 200) {
+            error_log("Telegram API HTTP {$httpCode}: {$response}");
+            return null;
+        }
+
+        $result = json_decode($response, true);
+        if (!$result || !isset($result['ok']) || !$result['ok']) {
+            error_log("Telegram API error: {$response}");
+            return null;
+        }
+
+        return $result['result'] ?? null;
+    }
+}
