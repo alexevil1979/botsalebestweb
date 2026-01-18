@@ -25,6 +25,7 @@ return [
     // Contact collection
     'contact_invalid' => "Please provide a valid phone number or email for contact.",
     'contact_success' => "Thank you! ✅\n\nYour application has been accepted. Our manager will contact you soon.\n\nApplication number: #{lead_id}",
+    'contact_group_note' => "💡 In groups/channels, you can provide your phone number as text in a message.",
     
     // Buttons
     'button_start' => '🚀 Start',

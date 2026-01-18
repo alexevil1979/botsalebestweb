@@ -25,6 +25,7 @@ return [
     // Contact collection
     'contact_invalid' => "请提供有效的电话号码或电子邮件以便联系。",
     'contact_success' => "谢谢！✅\n\n您的申请已被接受。我们的经理将很快与您联系。\n\n申请编号：#{lead_id}",
+    'contact_group_note' => "💡 在群组/频道中，您可以在消息中以文本形式提供电话号码。",
     
     // Buttons
     'button_start' => '🚀 开始',

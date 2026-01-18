@@ -73,6 +73,7 @@ class WebhookHandler
     private function handleMessage(array $message): void
     {
         $chatId = $message['chat']['id'];
+        $chatType = $message['chat']['type'] ?? 'private';
         $text = $message['text'] ?? '';
         $from = $message['from'];
 
@@ -125,8 +126,11 @@ class WebhookHandler
             $message['message_id'] ?? null
         );
 
+        // Store chat type in state for later use
+        $stateData['chat_type'] = $chatType;
+
         // Process message based on current step
-        $this->processStep($chatId, $userId, $dialogId, $currentStep, $text, $stateData, $userLang);
+        $this->processStep($chatId, $userId, $dialogId, $currentStep, $text, $stateData, $userLang, $chatType);
 
         // Update state in Redis
         Redis::set($stateKey, $stateData, 86400); // 24 hours
@@ -135,6 +139,7 @@ class WebhookHandler
     private function handleCallbackQuery(array $callbackQuery): void
     {
         $chatId = $callbackQuery['message']['chat']['id'];
+        $chatType = $callbackQuery['message']['chat']['type'] ?? 'private';
         $data = $callbackQuery['data'] ?? '';
         $from = $callbackQuery['from'];
 
@@ -149,6 +154,7 @@ class WebhookHandler
         $stateData = Redis::get($stateKey) ?? [];
         $stateData['current_step'] = $currentStep;
         $stateData['language'] = $userLang;
+        $stateData['chat_type'] = $chatType;
 
         // Process callback
         if ($data === 'start_dialog') {
@@ -160,21 +166,21 @@ class WebhookHandler
                 $nextStep = StateMachine::getNextState('greeting');
                 Dialog::updateStep($dialogId, $nextStep);
                 $stateData['current_step'] = $nextStep;
-                $this->processStep($chatId, $userId, $dialogId, $nextStep, '', $stateData, $userLang);
+                $this->processStep($chatId, $userId, $dialogId, $nextStep, '', $stateData, $userLang, $chatType);
             } else {
                 // В другом состоянии, сбрасываем и переходим к task_definition
                 $nextStep = 'task_definition';
                 Dialog::updateStep($dialogId, $nextStep);
                 $stateData['current_step'] = $nextStep;
                 // Очищаем данные диалога
-                $stateData = ['current_step' => $nextStep, 'language' => $userLang];
+                $stateData = ['current_step' => $nextStep, 'language' => $userLang, 'chat_type' => $chatType];
                 // Переходим к следующему шагу без показа приветствия
-                $this->processStep($chatId, $userId, $dialogId, $nextStep, '', $stateData, $userLang);
+                $this->processStep($chatId, $userId, $dialogId, $nextStep, '', $stateData, $userLang, $chatType);
             }
         } elseif (strpos($data, 'service_') === 0) {
             $serviceId = (int)str_replace('service_', '', $data);
             $stateData['selected_service_id'] = $serviceId;
-            $this->processStep($chatId, $userId, $dialogId, $currentStep, '', $stateData, $userLang);
+            $this->processStep($chatId, $userId, $dialogId, $currentStep, '', $stateData, $userLang, $chatType);
         }
 
         // Answer callback query
@@ -183,7 +189,7 @@ class WebhookHandler
         Redis::set($stateKey, $stateData, 86400);
     }
 
-    private function processStep(int $chatId, int $userId, int $dialogId, string $step, string $userText, array &$stateData, string $lang): void
+    private function processStep(int $chatId, int $userId, int $dialogId, string $step, string $userText, array &$stateData, string $lang, string $chatType = 'private'): void
     {
         switch ($step) {
             case 'greeting':
@@ -199,10 +205,10 @@ class WebhookHandler
                 $this->handleServiceSelection($chatId, $userId, $dialogId, $userText, $stateData, $lang);
                 break;
             case 'price_range':
-                $this->handlePriceRange($chatId, $userId, $dialogId, $userText, $stateData, $lang);
+                $this->handlePriceRange($chatId, $userId, $dialogId, $userText, $stateData, $lang, $chatType);
                 break;
             case 'call_to_action':
-                $this->handleCallToAction($chatId, $userId, $dialogId, $userText, $stateData, $lang);
+                $this->handleCallToAction($chatId, $userId, $dialogId, $userText, $stateData, $lang, $chatType);
                 break;
             case 'contact_collection':
                 $this->handleContactCollection($chatId, $userId, $dialogId, $userText, $stateData, $lang);
@@ -350,7 +356,7 @@ class WebhookHandler
         $stateData['current_step'] = $nextStep;
     }
 
-    private function handlePriceRange(int $chatId, int $userId, int $dialogId, string $userText, array &$stateData, string $lang): void
+    private function handlePriceRange(int $chatId, int $userId, int $dialogId, string $userText, array &$stateData, string $lang, string $chatType = 'private'): void
     {
         // Extract numbers from text
         preg_match_all('/\d+/', $userText, $matches);
@@ -363,17 +369,34 @@ class WebhookHandler
         $template = Translator::get('price_range', $lang);
         $text = $this->llm->improveText($template, [], $lang);
 
-        $keyboard = [
-            [[
-                'text' => Translator::get('button_phone', $lang),
-                'request_contact' => true
-            ]],
-            [[
-                'text' => Translator::get('button_email', $lang)
-            ]],
-        ];
+        // Кнопка с request_contact работает только в приватных чатах
+        $keyboard = [];
+        if ($chatType === 'private') {
+            $keyboard = [
+                [[
+                    'text' => Translator::get('button_phone', $lang),
+                    'request_contact' => true
+                ]],
+                [[
+                    'text' => Translator::get('button_email', $lang)
+                ]],
+            ];
+        } else {
+            // В группах/каналах только кнопка email
+            $keyboard = [
+                [[
+                    'text' => Translator::get('button_email', $lang)
+                ]],
+            ];
+            // Добавляем текст о том, что телефон можно написать вручную
+            $text .= "\n\n" . Translator::get('contact_group_note', $lang);
+        }
 
-        $this->telegram->sendMessageWithKeyboard($chatId, $text, $keyboard);
+        if (!empty($keyboard)) {
+            $this->telegram->sendMessageWithKeyboard($chatId, $text, $keyboard);
+        } else {
+            $this->telegram->sendMessage($chatId, $text);
+        }
         Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
 
         $nextStep = StateMachine::getNextState('price_range');
@@ -381,22 +404,39 @@ class WebhookHandler
         $stateData['current_step'] = $nextStep;
     }
 
-    private function handleCallToAction(int $chatId, int $userId, int $dialogId, string $userText, array &$stateData, string $lang): void
+    private function handleCallToAction(int $chatId, int $userId, int $dialogId, string $userText, array &$stateData, string $lang, string $chatType = 'private'): void
     {
         $template = Translator::get('call_to_action', $lang);
         $text = $this->llm->improveText($template, [], $lang);
 
-        $keyboard = [
-            [[
-                'text' => Translator::get('button_phone', $lang),
-                'request_contact' => true
-            ]],
-            [[
-                'text' => Translator::get('button_email', $lang)
-            ]],
-        ];
+        // Кнопка с request_contact работает только в приватных чатах
+        $keyboard = [];
+        if ($chatType === 'private') {
+            $keyboard = [
+                [[
+                    'text' => Translator::get('button_phone', $lang),
+                    'request_contact' => true
+                ]],
+                [[
+                    'text' => Translator::get('button_email', $lang)
+                ]],
+            ];
+        } else {
+            // В группах/каналах только кнопка email
+            $keyboard = [
+                [[
+                    'text' => Translator::get('button_email', $lang)
+                ]],
+            ];
+            // Добавляем текст о том, что телефон можно написать вручную
+            $text .= "\n\n" . Translator::get('contact_group_note', $lang);
+        }
 
-        $this->telegram->sendMessageWithKeyboard($chatId, $text, $keyboard);
+        if (!empty($keyboard)) {
+            $this->telegram->sendMessageWithKeyboard($chatId, $text, $keyboard);
+        } else {
+            $this->telegram->sendMessage($chatId, $text);
+        }
         Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
 
         $nextStep = StateMachine::getNextState('call_to_action');
