@@ -6,12 +6,36 @@ class Service
 {
     public static function getAll(bool $activeOnly = true): array
     {
-        if ($activeOnly) {
-            return Database::fetchAll(
-                "SELECT * FROM services WHERE active = 1 ORDER BY sort_order ASC, id ASC"
-            );
-        }
-        return Database::fetchAll("SELECT * FROM services ORDER BY sort_order ASC, id ASC");
+        $where = $activeOnly ? "WHERE active = 1" : "";
+        return Database::fetchAll(
+            "SELECT * FROM services {$where} ORDER BY sort_order ASC, id ASC"
+        );
+    }
+
+    public static function getByCategory(string $category, bool $activeOnly = true): array
+    {
+        $where = $activeOnly ? "AND active = 1" : "";
+        return Database::fetchAll(
+            "SELECT * FROM services WHERE category = ? {$where} ORDER BY sort_order ASC, id ASC",
+            [$category]
+        );
+    }
+
+    public static function getCategories(bool $activeOnly = true): array
+    {
+        $where = $activeOnly ? "AND active = 1" : "";
+        return Database::fetchAll(
+            "SELECT * FROM services WHERE parent_id IS NULL AND category IS NOT NULL {$where} ORDER BY sort_order ASC, id ASC"
+        );
+    }
+
+    public static function getByParent(int $parentId, bool $activeOnly = true): array
+    {
+        $where = $activeOnly ? "AND active = 1" : "";
+        return Database::fetchAll(
+            "SELECT * FROM services WHERE parent_id = ? {$where} ORDER BY sort_order ASC, id ASC",
+            [$parentId]
+        );
     }
 
     public static function getById(int $id): ?array
@@ -22,8 +46,8 @@ class Service
     public static function create(array $data): int
     {
         Database::execute(
-            "INSERT INTO services (name, description, price_from, price_to, active, sort_order) 
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO services (name, description, price_from, price_to, active, sort_order, parent_id, category) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['name'],
                 $data['description'] ?? null,
@@ -31,6 +55,8 @@ class Service
                 $data['price_to'] ?? null,
                 $data['active'] ?? 1,
                 $data['sort_order'] ?? 0,
+                $data['parent_id'] ?? null,
+                $data['category'] ?? null,
             ]
         );
         return (int)Database::lastInsertId();
@@ -41,7 +67,7 @@ class Service
         $fields = [];
         $params = [];
 
-        foreach (['name', 'description', 'price_from', 'price_to', 'active', 'sort_order'] as $field) {
+        foreach (['name', 'description', 'price_from', 'price_to', 'active', 'sort_order', 'parent_id', 'category'] as $field) {
             if (isset($data[$field])) {
                 $fields[] = "{$field} = ?";
                 $params[] = $data[$field];

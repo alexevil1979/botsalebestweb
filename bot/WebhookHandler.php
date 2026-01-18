@@ -177,6 +177,60 @@ class WebhookHandler
                 // Переходим к следующему шагу без показа приветствия
                 $this->processStep($chatId, $userId, $dialogId, $nextStep, '', $stateData, $userLang, $chatType);
             }
+        } elseif (strpos($data, 'category_') === 0) {
+            // Пользователь выбрал категорию - показываем услуги в этой категории
+            $categoryId = (int)str_replace('category_', '', $data);
+            $services = Service::getByParent($categoryId);
+            
+            if (empty($services)) {
+                // Если в категории нет услуг, показываем все услуги этой категории (по category)
+                $category = Service::getById($categoryId);
+                if ($category && $category['category']) {
+                    $services = Service::getByCategory($category['category']);
+                }
+            }
+            
+            if (empty($services)) {
+                $text = Translator::get('category_no_services', $userLang);
+                $this->telegram->sendMessage($chatId, $text);
+                Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
+            } else {
+                $keyboard = [];
+                foreach ($services as $service) {
+                    // Показываем только услуги с ценами (не подкатегории)
+                    if ($service['price_from'] !== null || $service['price_to'] !== null) {
+                        $priceText = '';
+                        if ($service['price_from']) {
+                            $priceText = ' (от ' . number_format($service['price_from'], 0, ',', ' ') . ' ₽)';
+                        }
+                        $keyboard[] = [['text' => $service['name'] . $priceText, 'callback_data' => 'service_' . $service['id']]];
+                    }
+                }
+                
+                // Кнопка "Назад к категориям"
+                $keyboard[] = [['text' => Translator::get('button_back_categories', $userLang), 'callback_data' => 'back_categories']];
+                
+                $template = Translator::get('category_services', $userLang);
+                $text = $this->llm->improveText($template, [], $userLang);
+                
+                $this->telegram->sendMessageWithInlineKeyboard($chatId, $text, $keyboard);
+                Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
+            }
+        } elseif ($data === 'back_categories') {
+            // Возврат к категориям
+            $categories = Service::getCategories();
+            if (!empty($categories)) {
+                $keyboard = [];
+                foreach ($categories as $category) {
+                    $keyboard[] = [['text' => $category['name'], 'callback_data' => 'category_' . $category['id']]];
+                }
+                
+                $template = Translator::get('clarification_services', $userLang);
+                $text = $this->llm->improveText($template, [], $userLang);
+                
+                $this->telegram->sendMessageWithInlineKeyboard($chatId, $text, $keyboard);
+                Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
+            }
         } elseif (strpos($data, 'service_') === 0) {
             $serviceId = (int)str_replace('service_', '', $data);
             $stateData['selected_service_id'] = $serviceId;
@@ -275,30 +329,44 @@ class WebhookHandler
         }
         $stateData['clarifications'][] = $userText;
 
-        $services = Service::getAll();
-        if (empty($services)) {
-            $text = Translator::get('clarification_no_services', $lang);
-            $this->telegram->sendMessage($chatId, $text);
-            Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
-            $nextStep = 'contact_collection';
-            Dialog::updateStep($dialogId, $nextStep);
-            $stateData['current_step'] = $nextStep;
-        } else {
+        // Показываем категории услуг
+        $categories = Service::getCategories();
+        if (empty($categories)) {
+            // Если нет категорий, показываем все услуги
+            $services = Service::getAll();
+            if (empty($services)) {
+                $text = Translator::get('clarification_no_services', $lang);
+                $this->telegram->sendMessage($chatId, $text);
+                Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
+                $nextStep = 'contact_collection';
+                Dialog::updateStep($dialogId, $nextStep);
+                $stateData['current_step'] = $nextStep;
+                return;
+            }
+            
             $keyboard = [];
             foreach ($services as $service) {
-                $keyboard[] = [['text' => $service['name'], 'callback_data' => 'service_' . $service['id']]];
+                if ($service['parent_id'] === null) { // Только услуги, не категории
+                    $keyboard[] = [['text' => $service['name'], 'callback_data' => 'service_' . $service['id']]];
+                }
             }
-
-            $template = Translator::get('clarification_services', $lang);
-            $text = $this->llm->improveText($template, [], $lang);
-
-            $this->telegram->sendMessageWithKeyboard($chatId, $text, $keyboard);
-            Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
-
-            $nextStep = StateMachine::getNextState('clarification');
-            Dialog::updateStep($dialogId, $nextStep);
-            $stateData['current_step'] = $nextStep;
+        } else {
+            // Показываем категории
+            $keyboard = [];
+            foreach ($categories as $category) {
+                $keyboard[] = [['text' => $category['name'], 'callback_data' => 'category_' . $category['id']]];
+            }
         }
+
+        $template = Translator::get('clarification_services', $lang);
+        $text = $this->llm->improveText($template, [], $lang);
+
+        $this->telegram->sendMessageWithInlineKeyboard($chatId, $text, $keyboard);
+        Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
+
+        $nextStep = StateMachine::getNextState('clarification');
+        Dialog::updateStep($dialogId, $nextStep);
+        $stateData['current_step'] = $nextStep;
     }
 
     private function handleServiceSelection(int $chatId, int $userId, int $dialogId, string $userText, array &$stateData, string $lang): void
