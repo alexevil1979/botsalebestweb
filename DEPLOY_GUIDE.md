@@ -263,11 +263,6 @@ sudo nano /etc/apache2/sites-available/botsalebestwebstudio.conf
     <FilesMatch "^\.">
         Require all denied
     </FilesMatch>
-
-    # Передача заголовков для webhook secret
-    <IfModule mod_headers.c>
-        RequestHeader set X-Telegram-Bot-Api-Secret-Token "expr=%{HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN}"
-    </IfModule>
 </VirtualHost>
 ```
 
