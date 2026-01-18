@@ -44,6 +44,8 @@ git clone https://github.com/alexevil1979/botsalebestweb.git botsalebestwebstudi
 cd botsalebestwebstudio
 ```
 
+> **📝 Примечание:** Репозиторий: `https://github.com/alexevil1979/botsalebestweb.git`
+
 ### 2. Настройка окружения
 
 ```bash

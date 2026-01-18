@@ -307,10 +307,13 @@ php bot/setup-webhook.php
 
 **Или вручную через curl:**
 ```bash
-curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook" \
-  -d "url=https://yourdomain.com/bot/webhook.php" \
-  -d "secret_token=your_webhook_secret_from_env"
+# Пример для домена botsale.1tlt.ru
+curl -X POST "https://api.telegram.org/bot8496559310:AAFDB-mRyv4pOh_4Sj2LdtNWYZ4XK0v_DE8/setWebhook" \
+  -d "url=https://botsale.1tlt.ru/bot/webhook.php" \
+  -d "secret_token=fkew323f32f23f2332f"
 ```
+
+> **📝 Примечание:** Замените токен и secret на свои значения из `.env`
 
 ---
 
