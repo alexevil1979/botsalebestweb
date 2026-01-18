@@ -5,6 +5,11 @@ RewriteEngine On
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# PHP processing (ensure PHP files are processed)
+<FilesMatch \.php$>
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
 # Admin panel routing
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
@@ -22,6 +27,5 @@ Options -Indexes
 
 # Protect .env file
 <FilesMatch "^\.env">
-    Order allow,deny
-    Deny from all
+    Require all denied
 </FilesMatch>
