@@ -10,42 +10,71 @@ Config::load(__DIR__ . '/../.env');
 echo "Running database migrations...\n";
 
 try {
-    $sql = file_get_contents(__DIR__ . '/../schema.sql');
+    $sqlFile = __DIR__ . '/../schema.sql';
+    
+    if (!file_exists($sqlFile)) {
+        throw new \RuntimeException("Schema file not found: {$sqlFile}");
+    }
+    
+    $sql = file_get_contents($sqlFile);
+    
+    if (empty($sql)) {
+        throw new \RuntimeException("Schema file is empty: {$sqlFile}");
+    }
+    
+    echo "Schema file loaded: " . strlen($sql) . " bytes\n";
+    
+    // Remove comments and clean up
+    $sql = preg_replace('/--.*$/m', '', $sql); // Remove single-line comments
+    $sql = preg_replace('/\/\*.*?\*\//s', '', $sql); // Remove multi-line comments
     
     // Split by semicolon and execute each statement
     $statements = array_filter(
         array_map('trim', explode(';', $sql)),
         function($stmt) {
+            $stmt = trim($stmt);
             return !empty($stmt) && 
-                   !preg_match('/^--/', $stmt) && 
-                   !preg_match('/^SET/', $stmt) &&
+                   strlen($stmt) > 10 && // Minimum statement length
+                   !preg_match('/^SET\s+/i', $stmt) &&
                    !preg_match('/^\/\*/', $stmt);
         }
     );
+    
+    echo "Found " . count($statements) . " SQL statements to execute\n\n";
 
     $pdo = Database::getInstance();
     
     $executed = 0;
     $errors = 0;
+    $skipped = 0;
     
-    foreach ($statements as $statement) {
-        if (empty(trim($statement))) {
+    foreach ($statements as $index => $statement) {
+        $statement = trim($statement);
+        if (empty($statement)) {
             continue;
         }
+        
+        // Show first 50 chars of statement for debugging
+        $preview = substr($statement, 0, 50) . (strlen($statement) > 50 ? '...' : '');
+        
         try {
             $pdo->exec($statement);
             $executed++;
-            echo "✓ Executed statement\n";
+            echo "✓ [" . ($index + 1) . "] Executed: {$preview}\n";
         } catch (\PDOException $e) {
             // Ignore "table already exists" errors
             if (strpos($e->getMessage(), 'already exists') !== false) {
-                echo "ℹ Table already exists, skipping\n";
+                $skipped++;
+                echo "ℹ [" . ($index + 1) . "] Already exists: {$preview}\n";
             } else {
                 $errors++;
-                echo "⚠ Warning: " . $e->getMessage() . "\n";
+                echo "✗ [" . ($index + 1) . "] Error: {$preview}\n";
+                echo "   Message: " . $e->getMessage() . "\n";
             }
         }
     }
+    
+    echo "\n";
 
     // Verify that tables were created
     echo "\nVerifying tables...\n";
