@@ -14,6 +14,18 @@ Config::load(__DIR__ . '/../.env');
 echo "Adding preferred_language column to users table...\n";
 
 try {
+    // Check if table exists
+    $tableExists = Database::fetch(
+        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+         WHERE TABLE_SCHEMA = DATABASE() 
+         AND TABLE_NAME = 'users'"
+    );
+
+    if (!$tableExists) {
+        echo "⚠ Table 'users' does not exist. Please run 'php migrations/migrate.php' first.\n";
+        exit(1);
+    }
+
     // Check if column exists
     $result = Database::fetch(
         "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 

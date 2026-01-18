@@ -35,7 +35,14 @@ fi
 if [ -f migrations/migrate.php ]; then
     echo "🗄️  Running database migrations..."
     php migrations/migrate.php
-    echo -e "${GREEN}✓ Migrations completed${NC}"
+    echo -e "${GREEN}✓ Main migrations completed${NC}"
+fi
+
+# Run additional migrations
+if [ -f migrations/add_preferred_language.php ]; then
+    echo "🗄️  Running additional migrations..."
+    php migrations/add_preferred_language.php || echo -e "${YELLOW}⚠ Additional migration failed (may already be applied)${NC}"
+    echo -e "${GREEN}✓ Additional migrations completed${NC}"
 fi
 
 # Clear Redis cache (optional)
