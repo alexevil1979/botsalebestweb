@@ -5,6 +5,7 @@ return [
     'greeting' => "你好！👋\n\n我将帮助您为您的企业创建网站。您想解决什么任务？",
     
     // Task definition
+    'task_definition_question' => "告诉我，您想解决什么任务？描述您的项目。",
     'task_definition_response' => "明白了！您想要：{task_description}\n\n请说明：\n• 您的预算是多少？\n• 何时需要启动？\n• 有什么特殊要求吗？",
     
     // Clarification

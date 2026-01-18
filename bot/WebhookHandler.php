@@ -152,11 +152,25 @@ class WebhookHandler
 
         // Process callback
         if ($data === 'start_dialog') {
-            // Начать новый диалог - сброс к начальному состоянию
-            $initialStep = StateMachine::getInitialState();
-            Dialog::updateStep($dialogId, $initialStep);
-            $stateData['current_step'] = $initialStep;
-            $this->processStep($chatId, $userId, $dialogId, $initialStep, '', $stateData, $userLang);
+            // Начать новый диалог - переходим к следующему шагу после приветствия
+            // Если уже в greeting, переходим к task_definition
+            // Если в другом состоянии, сбрасываем к greeting и сразу переходим к task_definition
+            if ($currentStep === 'greeting') {
+                // Уже в приветствии, просто переходим к следующему шагу
+                $nextStep = StateMachine::getNextState('greeting');
+                Dialog::updateStep($dialogId, $nextStep);
+                $stateData['current_step'] = $nextStep;
+                $this->processStep($chatId, $userId, $dialogId, $nextStep, '', $stateData, $userLang);
+            } else {
+                // В другом состоянии, сбрасываем и переходим к task_definition
+                $nextStep = 'task_definition';
+                Dialog::updateStep($dialogId, $nextStep);
+                $stateData['current_step'] = $nextStep;
+                // Очищаем данные диалога
+                $stateData = ['current_step' => $nextStep, 'language' => $userLang];
+                // Переходим к следующему шагу без показа приветствия
+                $this->processStep($chatId, $userId, $dialogId, $nextStep, '', $stateData, $userLang);
+            }
         } elseif (strpos($data, 'service_') === 0) {
             $serviceId = (int)str_replace('service_', '', $data);
             $stateData['selected_service_id'] = $serviceId;
@@ -223,6 +237,11 @@ class WebhookHandler
     private function handleTaskDefinition(int $chatId, int $userId, int $dialogId, string $userText, array &$stateData, string $lang): void
     {
         if (empty($userText)) {
+            // Показываем вопрос, если пользователь только перешел к этому шагу
+            $template = Translator::get('task_definition_question', $lang);
+            $text = $this->llm->improveText($template, [], $lang);
+            $this->telegram->sendMessage($chatId, $text);
+            Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
             return;
         }
 

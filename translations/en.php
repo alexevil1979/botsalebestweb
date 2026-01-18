@@ -5,6 +5,7 @@ return [
     'greeting' => "Hello! 👋\n\nI'll help you create a website for your business. What task would you like to solve?",
     
     // Task definition
+    'task_definition_question' => "Tell me, what task would you like to solve? Describe your project.",
     'task_definition_response' => "Got it! You want: {task_description}\n\nPlease clarify:\n• What is your budget?\n• When do you need to launch?\n• Are there any special requirements?",
     
     // Clarification
