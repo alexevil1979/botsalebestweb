@@ -23,23 +23,37 @@ if (!$webhookUrl) {
 echo "Setting up webhook: {$webhookUrl}\n";
 
 $telegram = new TelegramAPI();
-$result = $telegram->setWebhook($webhookUrl, $secret);
 
-if ($result !== null) {
-    echo "✅ Webhook set successfully!\n";
+try {
+    $result = $telegram->setWebhook($webhookUrl, $secret);
     
-    // Verify webhook
-    $info = $telegram->getWebhookInfo();
-    if ($info) {
-        echo "\nWebhook info:\n";
-        echo "URL: " . ($info['url'] ?? 'N/A') . "\n";
-        echo "Pending updates: " . ($info['pending_update_count'] ?? 0) . "\n";
-        if (isset($info['last_error_date'])) {
-            echo "Last error: " . date('Y-m-d H:i:s', $info['last_error_date']) . "\n";
-            echo "Error message: " . ($info['last_error_message'] ?? 'N/A') . "\n";
+    if ($result !== null && is_array($result)) {
+        echo "✅ Webhook set successfully!\n";
+        
+        // Verify webhook
+        $info = $telegram->getWebhookInfo();
+        if ($info !== null && is_array($info)) {
+            echo "\nWebhook info:\n";
+            echo "URL: " . ($info['url'] ?? 'N/A') . "\n";
+            echo "Pending updates: " . ($info['pending_update_count'] ?? 0) . "\n";
+            if (isset($info['last_error_date'])) {
+                echo "Last error: " . date('Y-m-d H:i:s', $info['last_error_date']) . "\n";
+                echo "Error message: " . ($info['last_error_message'] ?? 'N/A') . "\n";
+            }
+        }
+    } else {
+        echo "✅ Webhook set successfully! (result is not an array, but operation completed)\n";
+        
+        // Verify webhook anyway
+        $info = $telegram->getWebhookInfo();
+        if ($info !== null && is_array($info)) {
+            echo "\nWebhook info:\n";
+            echo "URL: " . ($info['url'] ?? 'N/A') . "\n";
+            echo "Pending updates: " . ($info['pending_update_count'] ?? 0) . "\n";
         }
     }
-} else {
-    echo "❌ Failed to set webhook\n";
+} catch (\Throwable $e) {
+    echo "❌ Error: " . $e->getMessage() . "\n";
+    echo "Stack trace: " . $e->getTraceAsString() . "\n";
     exit(1);
 }

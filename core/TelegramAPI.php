@@ -145,6 +145,16 @@ class TelegramAPI
             return null;
         }
 
-        return $result['result'] ?? null;
+        // Проверяем, что result существует и является массивом
+        if (!isset($result['result'])) {
+            return null;
+        }
+
+        // Если result не массив, возвращаем null (может быть false, true, string и т.д.)
+        if (!is_array($result['result'])) {
+            return null;
+        }
+
+        return $result['result'];
     }
 }
