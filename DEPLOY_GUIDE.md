@@ -128,6 +128,10 @@ DB_NAME=telegram_bot
 DB_USER=telegram_bot
 DB_PASS=your_secure_password_here
 DB_CHARSET=utf8mb4
+# DB_SOCKET=/tmp/mysql.sock  # Раскомментируйте, если MySQL использует сокет
+```
+
+> **📝 Примечание:** Если на вашем сервере MySQL использует сокет (например, `/tmp/mysql.sock`), проверьте это командой `php -i | grep mysql.default_socket` и укажите путь в `DB_SOCKET`. Подробнее: [MYSQL_SOCKET_SETUP.md](MYSQL_SOCKET_SETUP.md)
 
 # Redis
 REDIS_HOST=127.0.0.1
