@@ -45,7 +45,8 @@ cd /ssd/www/bots/botsalebestwebstudio
 git pull
 composer install --no-dev
 php migrations/migrate.php
-sudo systemctl reload php8.1-fpm
+php migrations/add_preferred_language.php
+sudo systemctl reload apache2
 ```
 
 ## Или используйте скрипт деплоя

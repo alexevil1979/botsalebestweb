@@ -54,54 +54,85 @@ sudo chmod -R 755 /ssd/www/bots/botsalebestwebstudio
 sudo chmod -R 777 /ssd/www/bots/botsalebestwebstudio/logs
 ```
 
-### 5. Настройка Nginx
+### 5. Настройка Apache
 
-Создайте файл `/etc/nginx/sites-available/botsalebestwebstudio`:
+#### Включение необходимых модулей
+```bash
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl
+```
 
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-    root /ssd/www/bots/botsalebestwebstudio;
-    index index.php;
+#### Создание конфигурации
 
-    location / {
-        try_files $uri $uri/ =404;
-    }
+Создайте файл `/etc/apache2/sites-available/botsalebestwebstudio.conf`:
 
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
+```apache
+<VirtualHost *:80>
+    ServerName yourdomain.com
+    ServerAlias www.yourdomain.com
+    DocumentRoot /ssd/www/bots/botsalebestwebstudio
 
-    location /bot/webhook.php {
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_index webhook.php;
-        fastcgi_param SCRIPT_FILENAME $document_root/bot/webhook.php;
-        include fastcgi_params;
-        fastcgi_param HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN $http_x_telegram_bot_api_secret_token;
-    }
+    # Логи
+    ErrorLog ${APACHE_LOG_DIR}/botsalebestwebstudio_error.log
+    CustomLog ${APACHE_LOG_DIR}/botsalebestwebstudio_access.log combined
 
-    location /admin {
-        try_files $uri $uri/ /admin/index.php;
-    }
-}
+    # Основные настройки
+    <Directory /ssd/www/bots/botsalebestwebstudio>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # PHP обработка
+    <FilesMatch \.php$>
+        SetHandler application/x-httpd-php
+    </FilesMatch>
+
+    # Админ-панель
+    <Directory /ssd/www/bots/botsalebestwebstudio/admin>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Webhook для Telegram
+    <Directory /ssd/www/bots/botsalebestwebstudio/bot>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Защита .env файла
+    <FilesMatch "^\.env">
+        Require all denied
+    </FilesMatch>
+
+    # Защита других скрытых файлов
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
+
+    # Передача заголовков для webhook secret
+    <IfModule mod_headers.c>
+        RequestHeader set X-Telegram-Bot-Api-Secret-Token "expr=%{HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN}"
+    </IfModule>
+</VirtualHost>
 ```
 
 Активируйте:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/botsalebestwebstudio /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
+sudo a2ensite botsalebestwebstudio.conf
+sudo apache2ctl configtest
+sudo systemctl reload apache2
 ```
 
 ### 6. Настройка SSL (Let's Encrypt)
 
 ```bash
-sudo certbot --nginx -d yourdomain.com
+sudo apt install -y certbot python3-certbot-apache
+sudo certbot --apache -d yourdomain.com -d www.yourdomain.com
 ```
 
 ### 7. Настройка Telegram Webhook
@@ -149,7 +180,8 @@ cd /ssd/www/bots/botsalebestwebstudio
 git pull
 composer install --no-dev
 php migrations/migrate.php
-sudo systemctl reload php8.1-fpm
+php migrations/add_preferred_language.php
+sudo systemctl reload apache2
 ```
 
 ## Проверка работы
@@ -161,8 +193,8 @@ sudo systemctl reload php8.1-fpm
 
 2. Проверьте логи:
    ```bash
-   tail -f /var/log/nginx/error.log
-   tail -f /var/log/php8.1-fpm.log
+   tail -f /var/log/apache2/error.log
+   tail -f /var/log/apache2/botsalebestwebstudio_error.log
    ```
 
 3. Откройте админку:
