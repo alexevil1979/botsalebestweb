@@ -11,11 +11,12 @@ use Core\Service;
 Config::load(__DIR__ . '/../.env');
 Auth::requireAuth();
 
-$action = $_GET['action'] ?? 'list';
-$serviceId = (int)($_GET['id'] ?? 0);
-
+// Обработка POST запросов (должна быть ПЕРЕД получением action из GET)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && Auth::verifyCSRF($_POST['csrf_token'] ?? '')) {
-    if ($action === 'create' || $action === 'edit') {
+    $postAction = $_POST['action'] ?? '';
+    $postServiceId = (int)($_POST['id'] ?? 0);
+    
+    if ($postAction === 'create' || $postAction === 'edit') {
         $data = [
             'name' => $_POST['name'] ?? '',
             'description' => $_POST['description'] ?? '',
@@ -25,19 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && Auth::verifyCSRF($_POST['csrf_token
             'sort_order' => (int)($_POST['sort_order'] ?? 0),
         ];
 
-        if ($action === 'create') {
+        if ($postAction === 'create') {
             Service::create($data);
         } else {
-            Service::update($serviceId, $data);
+            Service::update($postServiceId, $data);
         }
 
         header('Location: /admin/services.php');
         exit;
-    } elseif ($action === 'delete' && $serviceId) {
-        Service::delete($serviceId);
+    } elseif ($postAction === 'delete' && $postServiceId > 0) {
+        Service::delete($postServiceId);
         header('Location: /admin/services.php');
         exit;
-    } elseif ($action === 'delete_multiple') {
+    } elseif ($postAction === 'delete_multiple') {
         $ids = $_POST['service_ids'] ?? [];
         if (!empty($ids) && is_array($ids)) {
             foreach ($ids as $id) {
@@ -51,6 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && Auth::verifyCSRF($_POST['csrf_token
         exit;
     }
 }
+
+$action = $_GET['action'] ?? 'list';
+$serviceId = (int)($_GET['id'] ?? 0);
 
 $services = Service::getAll(false);
 $csrfToken = Auth::getCSRFToken();
