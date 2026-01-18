@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && Auth::verifyCSRF($_POST['csrf_token
         header('Location: /admin/services.php');
         exit;
     } elseif ($action === 'delete_multiple') {
-        $ids = $_POST['ids'] ?? [];
+        $ids = $_POST['service_ids'] ?? [];
         if (!empty($ids) && is_array($ids)) {
             foreach ($ids as $id) {
                 $id = (int)$id;
@@ -71,12 +71,7 @@ include __DIR__ . '/includes/header.php';
     <?php if ($action === 'list'): ?>
         <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
             <a href="/admin/services.php?action=create" class="btn">+ Добавить услугу</a>
-            <form id="deleteMultipleForm" method="POST" style="display: none; margin: 0;">
-                <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
-                <input type="hidden" name="action" value="delete_multiple">
-                <input type="hidden" name="ids" id="selectedIds" value="">
-                <button type="submit" class="btn btn-danger" id="deleteMultipleBtn" onclick="return confirm('Удалить выбранные услуги?')">Удалить выбранные</button>
-            </form>
+            <button type="button" class="btn btn-danger" id="deleteMultipleBtn" style="display: none;" onclick="deleteSelected()">Удалить выбранные</button>
         </div>
 
         <form id="servicesForm" method="POST">
@@ -149,9 +144,7 @@ include __DIR__ . '/includes/header.php';
         document.addEventListener('DOMContentLoaded', function() {
             const selectAll = document.getElementById('selectAll');
             const checkboxes = document.querySelectorAll('.service-checkbox');
-            const deleteMultipleForm = document.getElementById('deleteMultipleForm');
             const deleteMultipleBtn = document.getElementById('deleteMultipleBtn');
-            const selectedIdsInput = document.getElementById('selectedIds');
 
             // Выбрать все / снять выбор
             selectAll.addEventListener('change', function() {
@@ -165,12 +158,11 @@ include __DIR__ . '/includes/header.php';
             });
 
             function updateDeleteButton() {
-                const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+                const selected = Array.from(checkboxes).filter(cb => cb.checked);
                 if (selected.length > 0) {
-                    deleteMultipleForm.style.display = 'inline-block';
-                    selectedIdsInput.value = JSON.stringify(selected);
+                    deleteMultipleBtn.style.display = 'inline-block';
                 } else {
-                    deleteMultipleForm.style.display = 'none';
+                    deleteMultipleBtn.style.display = 'none';
                 }
             }
 
@@ -181,6 +173,48 @@ include __DIR__ . '/includes/header.php';
                 });
             });
         });
+
+        function deleteSelected() {
+            if (!confirm('Удалить выбранные услуги?')) {
+                return;
+            }
+            
+            const form = document.getElementById('servicesForm');
+            const formData = new FormData(form);
+            formData.append('action', 'delete_multiple');
+            
+            // Создаем скрытую форму для отправки
+            const submitForm = document.createElement('form');
+            submitForm.method = 'POST';
+            submitForm.action = '/admin/services.php';
+            
+            // Копируем CSRF токен
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrf_token';
+            csrfInput.value = formData.get('csrf_token');
+            submitForm.appendChild(csrfInput);
+            
+            // Добавляем action
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'delete_multiple';
+            submitForm.appendChild(actionInput);
+            
+            // Добавляем выбранные ID
+            const checkboxes = document.querySelectorAll('.service-checkbox:checked');
+            checkboxes.forEach(cb => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'service_ids[]';
+                input.value = cb.value;
+                submitForm.appendChild(input);
+            });
+            
+            document.body.appendChild(submitForm);
+            submitForm.submit();
+        }
         </script>
 
     <?php elseif ($action === 'create' || $action === 'edit'): ?>
