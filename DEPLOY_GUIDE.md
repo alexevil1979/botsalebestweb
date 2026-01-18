@@ -540,4 +540,27 @@ mysqladmin -u root -p status
 
 ---
 
+---
+
+## 🔄 Применение изменений на VPS
+
+После любых изменений в коде выполните на VPS:
+
+```bash
+cd /ssd/www/bots/botsalebestwebstudio
+git pull origin main
+composer install --no-dev --optimize-autoloader
+php migrations/migrate.php
+sudo systemctl reload apache2
+```
+
+**Или используйте скрипт:**
+```bash
+bash deploy/deploy.sh
+```
+
+**📖 Подробная инструкция:** [APPLY_CHANGES_VPS.md](APPLY_CHANGES_VPS.md)
+
+---
+
 **🎉 Готово! Бот развернут и готов к работе!**
