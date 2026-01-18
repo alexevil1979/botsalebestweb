@@ -18,8 +18,15 @@ ssh root@your-server-ip
 # 2. Переход в директорию проекта
 cd /ssd/www/bots/botsalebestwebstudio
 
-# 3. Получение изменений из GitHub
+# 3. Исправление прав доступа Git (если нужно)
+git config --global --add safe.directory /ssd/www/bots/botsalebestwebstudio
+
+# 4. Получение изменений из GitHub
 git pull origin main
+
+# Если pull не работает, используйте принудительное обновление:
+# git fetch origin main
+# git reset --hard origin/main
 
 # 4. Обновление зависимостей
 composer install --no-dev --optimize-autoloader

@@ -11,20 +11,23 @@ ssh root@your-server-ip
 # 2. Переход в директорию проекта
 cd /ssd/www/bots/botsalebestwebstudio
 
-# 3. Получение изменений из GitHub
+# 3. Исправление прав доступа Git (если нужно)
+git config --global --add safe.directory /ssd/www/bots/botsalebestwebstudio
+
+# 4. Получение изменений из GitHub
 git pull origin main
 
-# 4. Обновление зависимостей
+# 5. Обновление зависимостей
 composer install --no-dev --optimize-autoloader
 
-# 5. Запуск миграций БД (в правильном порядке!)
+# 6. Запуск миграций БД (в правильном порядке!)
 php migrations/migrate.php
 php migrations/add_preferred_language.php
 
-# 6. Перезагрузка Apache
+# 7. Перезагрузка Apache
 sudo systemctl reload apache2
 
-# 7. Проверка webhook (опционально)
+# 8. Проверка webhook
 php bot/setup-webhook.php
 ```
 
