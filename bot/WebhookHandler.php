@@ -583,6 +583,13 @@ class WebhookHandler
 
         $leadId = Lead::create($leadData);
 
+        // Получаем информацию о лиде для уведомления
+        $lead = Lead::getById($leadId);
+        $user = User::getById($userId);
+        
+        // Отправляем уведомление менеджеру
+        $this->notifyManager($lead, $user);
+
         $template = Translator::get('contact_success', $lang, ['lead_id' => $leadId]);
         $text = $this->llm->improveText($template, ['lead_id' => $leadId], $lang);
 
@@ -599,5 +606,79 @@ class WebhookHandler
             "INSERT INTO events (user_id, dialog_id, event_type, event_data) VALUES (?, ?, 'lead_created', ?)",
             [$userId, $dialogId, json_encode(['lead_id' => $leadId])]
         );
+    }
+
+    /**
+     * Отправка уведомления менеджеру о новом лиде
+     */
+    private function notifyManager(array $lead, array $user): void
+    {
+        $managerChatId = Config::get('MANAGER_CHAT_ID');
+        $managerUsername = Config::get('MANAGER_USERNAME', 'Branch');
+        
+        // Если не указан chat_id, пытаемся использовать username
+        $targetChatId = $managerChatId;
+        if (!$targetChatId) {
+            // Пытаемся использовать username (должен быть без @)
+            $targetChatId = '@' . ltrim($managerUsername, '@');
+        }
+        
+        if (!$targetChatId) {
+            error_log("Manager notification: MANAGER_CHAT_ID or MANAGER_USERNAME not configured");
+            return;
+        }
+
+        // Формируем сообщение для менеджера
+        $message = "🆕 <b>Новый лид #{$lead['id']}</b>\n\n";
+        
+        $message .= "👤 <b>Клиент:</b>\n";
+        $message .= "• Имя: " . htmlspecialchars($user['first_name'] ?? 'Не указано') . "\n";
+        if ($user['username']) {
+            $message .= "• Username: @{$user['username']}\n";
+        }
+        $message .= "• Telegram ID: {$user['telegram_id']}\n\n";
+        
+        if ($lead['phone']) {
+            $message .= "📱 <b>Телефон:</b> {$lead['phone']}\n";
+        }
+        if ($lead['email']) {
+            $message .= "✉️ <b>Email:</b> {$lead['email']}\n";
+        }
+        
+        if ($lead['service_name']) {
+            $message .= "\n🎯 <b>Услуга:</b> " . htmlspecialchars($lead['service_name']) . "\n";
+        }
+        
+        if ($lead['budget_from'] || $lead['budget_to']) {
+            $budget = '';
+            if ($lead['budget_from']) {
+                $budget = 'от ' . number_format($lead['budget_from'], 0, ',', ' ') . ' ₽';
+            }
+            if ($lead['budget_to']) {
+                if ($budget) $budget .= ' ';
+                $budget .= 'до ' . number_format($lead['budget_to'], 0, ',', ' ') . ' ₽';
+            }
+            $message .= "💰 <b>Бюджет:</b> {$budget}\n";
+        }
+        
+        if ($lead['task_description']) {
+            $message .= "\n📝 <b>Описание задачи:</b>\n";
+            $message .= htmlspecialchars(mb_substr($lead['task_description'], 0, 500));
+            if (mb_strlen($lead['task_description']) > 500) {
+                $message .= '...';
+            }
+            $message .= "\n";
+        }
+        
+        $message .= "\n🔗 <b>Просмотр в админке:</b>\n";
+        $adminUrl = Config::get('ADMIN_URL', 'https://botsale.1tlt.ru');
+        $message .= "{$adminUrl}/admin/lead.php?id={$lead['id']}";
+        
+        // Отправляем уведомление
+        try {
+            $this->telegram->sendMessageToManager($targetChatId, $message);
+        } catch (\Exception $e) {
+            error_log("Failed to send manager notification: " . $e->getMessage());
+        }
     }
 }

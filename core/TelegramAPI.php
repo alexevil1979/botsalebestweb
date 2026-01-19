@@ -110,6 +110,24 @@ class TelegramAPI
         return $this->request('getWebhookInfo');
     }
 
+    /**
+     * Получить информацию о чате по username или chat_id
+     */
+    public function getChat(string|int $chatId): ?array
+    {
+        $result = $this->request('getChat', ['chat_id' => $chatId]);
+        return $result;
+    }
+
+    /**
+     * Отправить сообщение менеджеру
+     * Поддерживает как chat_id (число), так и username (строка с @)
+     */
+    public function sendMessageToManager(string|int $managerChatId, string $text, array $options = []): ?array
+    {
+        return $this->sendMessage($managerChatId, $text, $options);
+    }
+
     private function request(string $method, array $data = []): ?array
     {
         $url = $this->apiUrl . $method;
