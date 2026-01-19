@@ -538,11 +538,14 @@ class WebhookHandler
         $email = null;
         $name = null;
 
-        // Check if it's a contact from state
+        // Check if it's a contact from state (получен через кнопку request_contact)
         if (isset($stateData['contact'])) {
             $contact = $stateData['contact'];
             $phone = $contact['phone_number'] ?? null;
             $name = $contact['first_name'] ?? null;
+            
+            // Очищаем контакт из state после использования
+            unset($stateData['contact']);
         } elseif (!empty($userText)) {
             // Try to extract email or phone from text
             if (filter_var($userText, FILTER_VALIDATE_EMAIL)) {
@@ -557,6 +560,9 @@ class WebhookHandler
 
         if (!$phone && !$email) {
             $text = Translator::get('contact_invalid', $lang);
+            if (($stateData['chat_type'] ?? 'private') !== 'private') {
+                $text .= "\n\n" . Translator::get('contact_group_note', $lang);
+            }
             $this->telegram->sendMessage($chatId, $text);
             Dialog::saveMessage($dialogId, $chatId, $userId, 'out', $text);
             return;
