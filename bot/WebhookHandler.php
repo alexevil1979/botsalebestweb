@@ -129,6 +129,14 @@ class WebhookHandler
         // Store chat type in state for later use
         $stateData['chat_type'] = $chatType;
 
+        // Если получен контакт и мы на этапе сбора контактов, сразу обрабатываем
+        if ($contact && ($currentStep === 'price_range' || $currentStep === 'call_to_action' || $currentStep === 'contact_collection')) {
+            // Переходим к этапу сбора контактов
+            $currentStep = 'contact_collection';
+            Dialog::updateStep($dialogId, $currentStep);
+            $stateData['current_step'] = $currentStep;
+        }
+
         // Process message based on current step
         $this->processStep($chatId, $userId, $dialogId, $currentStep, $text, $stateData, $userLang, $chatType);
 
@@ -426,6 +434,12 @@ class WebhookHandler
 
     private function handlePriceRange(int $chatId, int $userId, int $dialogId, string $userText, array &$stateData, string $lang, string $chatType = 'private'): void
     {
+        // Если получен контакт, сразу переходим к сбору контактов
+        if (isset($stateData['contact'])) {
+            $this->handleContactCollection($chatId, $userId, $dialogId, $userText, $stateData, $lang);
+            return;
+        }
+        
         // Extract numbers from text
         preg_match_all('/\d+/', $userText, $matches);
         $numbers = $matches[0] ?? [];
@@ -474,6 +488,12 @@ class WebhookHandler
 
     private function handleCallToAction(int $chatId, int $userId, int $dialogId, string $userText, array &$stateData, string $lang, string $chatType = 'private'): void
     {
+        // Если получен контакт, сразу переходим к сбору контактов
+        if (isset($stateData['contact'])) {
+            $this->handleContactCollection($chatId, $userId, $dialogId, $userText, $stateData, $lang);
+            return;
+        }
+        
         $template = Translator::get('call_to_action', $lang);
         $text = $this->llm->improveText($template, [], $lang);
 
