@@ -671,8 +671,8 @@ class WebhookHandler
         }
         
         $message .= "\n🔗 <b>Просмотр в админке:</b>\n";
-        $adminUrl = Config::get('ADMIN_URL', 'https://botsale.1tlt.ru');
-        $message .= "{$adminUrl}/admin/lead.php?id={$lead['id']}";
+        $adminUrl = Config::get('ADMIN_URL', 'https://botsale.1tlt.ru/admin');
+        $message .= "{$adminUrl}/lead.php?id={$lead['id']}";
         
         // Отправляем уведомление
         try {

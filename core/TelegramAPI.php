@@ -16,7 +16,7 @@ class TelegramAPI
         $this->apiUrl = "https://api.telegram.org/bot{$this->token}/";
     }
 
-    public function sendMessage(int $chatId, string $text, array $options = []): ?array
+    public function sendMessage(int|string $chatId, string $text, array $options = []): ?array
     {
         $data = array_merge([
             'chat_id' => $chatId,
