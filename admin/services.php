@@ -62,20 +62,43 @@ $serviceId = (int)($_GET['id'] ?? 0);
 
 // Получаем категории и услуги для дерева
 $allServices = Service::getAll(false);
-$categories = Service::getCategories(false);
 $csrfToken = Auth::getCSRFToken();
 
-// Группируем услуги по категориям
-$servicesByCategory = [];
+// Получаем все категории (записи без parent_id)
+$categories = [];
 $servicesByParent = [];
 foreach ($allServices as $service) {
-    if ($service['parent_id'] === null && ($service['price_from'] !== null || $service['price_to'] !== null)) {
-        // Услуга без родителя (но с ценой) - добавляем в общий список
-        $servicesByCategory['_root'][] = $service;
-    } elseif ($service['parent_id'] !== null) {
-        // Услуга с родителем
+    if ($service['parent_id'] === null) {
+        // Это категория (корневой элемент)
+        $categories[] = $service;
+    } else {
+        // Это услуга с родителем
+        if (!isset($servicesByParent[$service['parent_id']])) {
+            $servicesByParent[$service['parent_id']] = [];
+        }
         $servicesByParent[$service['parent_id']][] = $service;
     }
+}
+
+// Сортируем категории по sort_order
+usort($categories, function($a, $b) {
+    return ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0);
+});
+
+// Сортируем услуги в каждой категории
+foreach ($servicesByParent as $parentId => $services) {
+    usort($servicesByParent[$parentId], function($a, $b) {
+        return ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0);
+    });
+}
+
+// Строим дерево для отображения
+$servicesTree = [];
+foreach ($categories as $category) {
+    $servicesTree[$category['id']] = [
+        'info' => $category,
+        'children' => $servicesByParent[$category['id']] ?? []
+    ];
 }
 
 if ($action === 'edit' && $serviceId) {
@@ -86,9 +109,17 @@ if ($action === 'edit' && $serviceId) {
     }
 }
 
-// Для формы редактирования нужны категории
+// Для формы редактирования нужны категории (все записи без parent_id)
 if ($action === 'create' || $action === 'edit') {
-    $categories = Service::getCategories(false);
+    $categories = [];
+    foreach ($allServices as $service) {
+        if ($service['parent_id'] === null) {
+            $categories[] = $service;
+        }
+    }
+    usort($categories, function($a, $b) {
+        return ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0);
+    });
 }
 
 include __DIR__ . '/includes/header.php';
@@ -104,81 +135,144 @@ include __DIR__ . '/includes/header.php';
 
         <form id="servicesForm" method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40px;">
-                            <input type="checkbox" id="selectAll" title="Выбрать все">
-                        </th>
-                        <th>ID</th>
-                        <th>Название</th>
-                        <th>Описание</th>
-                        <th>Цена</th>
-                        <th>Активна</th>
-                        <th>Порядок</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($services as $service): ?>
-                        <tr>
-                            <td>
-                                <input type="checkbox" name="service_ids[]" value="<?php echo $service['id']; ?>" class="service-checkbox">
-                            </td>
-                            <td><?php echo $service['id']; ?></td>
-                            <td><strong><?php echo htmlspecialchars($service['name']); ?></strong></td>
-                            <td><?php echo htmlspecialchars(mb_substr($service['description'] ?? '', 0, 100)); ?><?php echo mb_strlen($service['description'] ?? '') > 100 ? '...' : ''; ?></td>
-                            <td>
-                                <?php if ($service['price_from'] || $service['price_to']): ?>
-                                    <?php if ($service['price_from']): ?>
-                                        от <?php echo number_format($service['price_from'], 0, ',', ' '); ?> ₽
-                                    <?php endif; ?>
-                                    <?php if ($service['price_to']): ?>
-                                        до <?php echo number_format($service['price_to'], 0, ',', ' '); ?> ₽
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    Не указана
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <?php if ($service['active']): ?>
-                                    <span class="status-badge status-active">Да</span>
-                                <?php else: ?>
-                                    <span class="status-badge status-lost">Нет</span>
-                                <?php endif; ?>
-                            </td>
-                            <td><?php echo $service['sort_order']; ?></td>
-                            <td>
-                                <a href="/admin/services.php?action=edit&id=<?php echo $service['id']; ?>" class="btn-small">Редактировать</a>
-                                <form method="POST" style="display: inline;" onsubmit="return confirm('Удалить услугу?');">
-                                    <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="id" value="<?php echo $service['id']; ?>">
-                                    <button type="submit" class="btn-small btn-danger">Удалить</button>
-                                </form>
-                            </td>
-                        </tr>
+            <div class="services-tree">
+                <?php if (empty($servicesTree)): ?>
+                    <p style="text-align: center; padding: 2rem;">Нет услуг или категорий</p>
+                <?php else: ?>
+                    <?php foreach ($servicesTree as $categoryId => $categoryData): ?>
+                        <div class="category-item">
+                            <div class="category-header" onclick="toggleCategory(<?php echo $categoryId; ?>)">
+                                <span class="toggle-icon" id="toggle-<?php echo $categoryId; ?>">▶</span>
+                                <input type="checkbox" class="category-checkbox" data-category-id="<?php echo $categoryId; ?>" onclick="event.stopPropagation(); toggleCategoryCheckbox(<?php echo $categoryId; ?>)">
+                                <strong><?php echo htmlspecialchars($categoryData['info']['name']); ?></strong> 
+                                (<?php echo count($categoryData['children']); ?> услуг)
+                                <div class="category-actions">
+                                    <a href="/admin/services.php?action=edit&id=<?php echo $categoryData['info']['id']; ?>" class="btn-small" onclick="event.stopPropagation();">Редактировать</a>
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Удалить категорию и все вложенные услуги?');" onclick="event.stopPropagation();">
+                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?php echo $categoryData['info']['id']; ?>">
+                                        <button type="submit" class="btn-small btn-danger">Удалить</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="category-content" id="content-<?php echo $categoryId; ?>" style="display: none;">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40px;"><input type="checkbox" class="select-all-in-category" data-category-id="<?php echo $categoryId; ?>" onclick="toggleAllInCategory(<?php echo $categoryId; ?>)"></th>
+                                            <th>ID</th>
+                                            <th>Название</th>
+                                            <th>Описание</th>
+                                            <th>Цена</th>
+                                            <th>Активна</th>
+                                            <th>Порядок</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($categoryData['children'] as $service): ?>
+                                            <tr>
+                                                <td><input type="checkbox" name="service_ids[]" value="<?php echo $service['id']; ?>" class="service-checkbox" data-category-id="<?php echo $categoryId; ?>"></td>
+                                                <td><?php echo $service['id']; ?></td>
+                                                <td><?php echo htmlspecialchars($service['name']); ?></td>
+                                                <td><?php echo htmlspecialchars(mb_substr($service['description'] ?? '', 0, 100)); ?><?php echo mb_strlen($service['description'] ?? '') > 100 ? '...' : ''; ?></td>
+                                                <td>
+                                                    <?php if ($service['is_hourly']): ?>
+                                                        <?php echo number_format($service['hourly_rate'], 0, ',', ' '); ?> $/час
+                                                    <?php elseif ($service['price_from'] || $service['price_to']): ?>
+                                                        <?php if ($service['price_from']): ?>
+                                                            от <?php echo number_format($service['price_from'], 0, ',', ' '); ?> ₽
+                                                        <?php endif; ?>
+                                                        <?php if ($service['price_to']): ?>
+                                                            до <?php echo number_format($service['price_to'], 0, ',', ' '); ?> ₽
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        Не указана
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td><?php echo $service['active'] ? '<span class="status-badge status-active">Да</span>' : '<span class="status-badge status-lost">Нет</span>'; ?></td>
+                                                <td><?php echo $service['sort_order']; ?></td>
+                                                <td>
+                                                    <a href="/admin/services.php?action=edit&id=<?php echo $service['id']; ?>" class="btn-small">Редактировать</a>
+                                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Удалить услугу?');">
+                                                        <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="id" value="<?php echo $service['id']; ?>">
+                                                        <button type="submit" class="btn-small btn-danger">Удалить</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        <?php if (empty($categoryData['children'])): ?>
+                                            <tr>
+                                                <td colspan="8" style="text-align: center; padding: 1rem;">Нет услуг в этой категории</td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     <?php endforeach; ?>
-                    <?php if (empty($services)): ?>
-                        <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem;">Нет услуг</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                <?php endif; ?>
+            </div>
         </form>
 
         <script>
         function toggleCategory(categoryId) {
             const content = document.getElementById('content-' + categoryId);
             const toggle = document.getElementById('toggle-' + categoryId);
+            const header = toggle.closest('.category-header');
             
-            if (content.style.display === 'none') {
+            if (content.style.display === 'none' || !content.style.display) {
                 content.style.display = 'block';
                 toggle.textContent = '▼';
+                header.classList.add('expanded');
             } else {
                 content.style.display = 'none';
                 toggle.textContent = '▶';
+                header.classList.remove('expanded');
+            }
+        }
+
+        function toggleCategoryCheckbox(categoryId) {
+            const categoryCheckbox = document.querySelector(`.category-checkbox[data-category-id="${categoryId}"]`);
+            const serviceCheckboxes = document.querySelectorAll(`.service-checkbox[data-category-id="${categoryId}"]`);
+            const isChecked = categoryCheckbox.checked;
+            
+            serviceCheckboxes.forEach(cb => {
+                cb.checked = isChecked;
+            });
+            
+            updateDeleteButton();
+        }
+
+        function toggleAllInCategory(categoryId) {
+            const selectAllCheckbox = document.querySelector(`.select-all-in-category[data-category-id="${categoryId}"]`);
+            const serviceCheckboxes = document.querySelectorAll(`.service-checkbox[data-category-id="${categoryId}"]`);
+            const isChecked = selectAllCheckbox.checked;
+            
+            serviceCheckboxes.forEach(cb => {
+                cb.checked = isChecked;
+            });
+            
+            // Обновляем чекбокс категории
+            const categoryCheckbox = document.querySelector(`.category-checkbox[data-category-id="${categoryId}"]`);
+            if (categoryCheckbox) {
+                categoryCheckbox.checked = isChecked && serviceCheckboxes.length > 0;
+            }
+            
+            updateDeleteButton();
+        }
+        
+        function updateDeleteButton() {
+            const checkboxes = document.querySelectorAll('.service-checkbox:checked');
+            const deleteMultipleBtn = document.getElementById('deleteMultipleBtn');
+            
+            if (checkboxes.length > 0) {
+                deleteMultipleBtn.style.display = 'inline-block';
+            } else {
+                deleteMultipleBtn.style.display = 'none';
             }
         }
         
@@ -191,14 +285,8 @@ include __DIR__ . '/includes/header.php';
                 cb.addEventListener('change', updateDeleteButton);
             });
 
-            function updateDeleteButton() {
-                const selected = Array.from(checkboxes).filter(cb => cb.checked);
-                if (selected.length > 0) {
-                    deleteMultipleBtn.style.display = 'inline-block';
-                } else {
-                    deleteMultipleBtn.style.display = 'none';
-                }
-            }
+            // Инициализация состояния кнопки
+            updateDeleteButton();
         });
 
         function deleteSelected() {

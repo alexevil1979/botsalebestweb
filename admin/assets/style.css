@@ -278,6 +278,73 @@ h2 {
     text-align: right;
 }
 
+/* Category Tree Styles (for services.php) */
+.category-item {
+    border-bottom: 1px solid #eee;
+    margin-bottom: 0.5rem;
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    cursor: pointer;
+    font-weight: 600;
+    border-bottom: 1px solid #e0e0e0;
+    gap: 0.5rem;
+}
+
+.category-header:hover {
+    background: #e9ecef;
+}
+
+.category-header.expanded {
+    background: #e9ecef;
+}
+
+.category-header .toggle-icon {
+    margin-right: 0.5rem;
+    transition: transform 0.2s ease-in-out;
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+}
+
+.category-header.expanded .toggle-icon {
+    transform: rotate(90deg);
+}
+
+.category-header .category-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.category-content {
+    padding: 0.5rem 1rem;
+    background: #fff;
+}
+
+.category-content .data-table {
+    margin-top: 0;
+    border: none;
+}
+
+.category-content .data-table th,
+.category-content .data-table td {
+    padding: 0.5rem;
+}
+
+.category-content .data-table tr:first-child td {
+    border-top: none;
+}
+
 .tree-service-actions {
     display: flex;
     gap: 0.5rem;
